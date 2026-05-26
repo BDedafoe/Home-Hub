@@ -34,7 +34,9 @@ type GoogleEventResponse = {
   id?: string;
   htmlLink?: string;
   error?: {
+    code?: number;
     message?: string;
+    status?: string;
   };
 };
 
@@ -169,6 +171,10 @@ export async function syncTaskToGoogleCalendar(supabase: SupabaseClient, userId:
   const calendarEvent = (await response.json()) as GoogleEventResponse;
 
   if (!response.ok || !calendarEvent.id) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Google Calendar needs permission to create events. Disconnect and reconnect Google Calendar in Settings.");
+    }
+
     throw new Error(calendarEvent.error?.message || "Could not create the Google Calendar reminder.");
   }
 

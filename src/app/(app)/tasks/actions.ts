@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
 import { syncTaskToGoogleCalendar } from "@/lib/google-calendar";
 
@@ -51,10 +52,16 @@ export async function createCalendarReminder(formData: FormData) {
     return;
   }
 
-  await syncTaskToGoogleCalendar(supabase, user.id, id, reminderMinutes);
+  try {
+    await syncTaskToGoogleCalendar(supabase, user.id, id, reminderMinutes);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not create the Google Calendar reminder.";
+    redirect(`/tasks?calendar_error=${encodeURIComponent(message)}`);
+  }
 
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
+  redirect("/tasks?calendar=added");
 }
 
 export async function toggleTask(formData: FormData) {

@@ -28,7 +28,12 @@ const priorityStyles = {
   high: "border-coral/30 bg-coral/10 text-coral"
 };
 
-export default async function TasksPage() {
+type TasksPageProps = {
+  searchParams: Promise<{ calendar?: string; calendar_error?: string }>;
+};
+
+export default async function TasksPage({ searchParams }: TasksPageProps) {
+  const params = await searchParams;
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
 
@@ -79,6 +84,16 @@ export default async function TasksPage() {
       </div>
 
       <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+        {params.calendar === "added" ? (
+          <p className="mb-4 rounded-md border border-sage/30 bg-sage/10 px-3 py-2 text-sm text-sage">
+            Google Calendar reminder added.
+          </p>
+        ) : null}
+        {params.calendar_error ? (
+          <p className="mb-4 rounded-md border border-coral/40 bg-coral/10 px-3 py-2 text-sm text-coral">
+            {params.calendar_error}
+          </p>
+        ) : null}
         <form action={addTask} className="grid gap-3 lg:grid-cols-[1.1fr_1fr_0.65fr_0.55fr_0.7fr_0.55fr_auto]">
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Task</span>
