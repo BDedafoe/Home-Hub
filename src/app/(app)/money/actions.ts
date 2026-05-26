@@ -53,3 +53,73 @@ export async function deleteTransaction(formData: FormData) {
   revalidatePath("/money");
   revalidatePath("/dashboard");
 }
+
+export async function addRecurringBill(formData: FormData) {
+  const { supabase, user } = await getCurrentUser();
+  const household = await getOrCreateHousehold(user);
+  const name = String(formData.get("name") ?? "").trim();
+  const dueDay = Number(formData.get("due_day"));
+
+  if (!name || !Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) {
+    return;
+  }
+
+  const amountValue = String(formData.get("amount") ?? "").replace(/,/g, "");
+  const amount = amountValue ? Number(amountValue) : null;
+  const category = String(formData.get("category") ?? "").trim() || null;
+  const autopay = formData.get("autopay") === "on";
+
+  const { error } = await supabase.from("recurring_bills").insert({
+    household_id: household.id,
+    name,
+    amount: amount && Number.isFinite(amount) && amount > 0 ? amount : null,
+    category,
+    due_day: dueDay,
+    autopay,
+    active: true
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/money");
+  revalidatePath("/dashboard");
+}
+
+export async function toggleRecurringBill(formData: FormData) {
+  const { supabase } = await getCurrentUser();
+  const id = String(formData.get("id") ?? "");
+  const active = String(formData.get("active")) === "true";
+
+  if (!id) {
+    return;
+  }
+
+  const { error } = await supabase.from("recurring_bills").update({ active }).eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/money");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteRecurringBill(formData: FormData) {
+  const { supabase } = await getCurrentUser();
+  const id = String(formData.get("id") ?? "");
+
+  if (!id) {
+    return;
+  }
+
+  const { error } = await supabase.from("recurring_bills").delete().eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/money");
+  revalidatePath("/dashboard");
+}

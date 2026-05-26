@@ -42,6 +42,14 @@ type DashboardNote = {
   category: string | null;
 };
 
+type DashboardBill = {
+  id: string;
+  name: string;
+  amount: number | null;
+  due_day: number | null;
+  active: boolean;
+};
+
 export default async function DashboardPage() {
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
@@ -54,7 +62,8 @@ export default async function DashboardPage() {
     { data: transactions, error: transactionsError },
     { data: meals, error: mealsError },
     { data: maintenance, error: maintenanceError },
-    { data: notes, error: notesError }
+    { data: notes, error: notesError },
+    { data: bills, error: billsError }
   ] = await Promise.all([
     supabase
       .from("tasks")
@@ -102,7 +111,13 @@ export default async function DashboardPage() {
       .eq("pinned", true)
       .order("created_at", { ascending: false })
       .limit(2)
-      .returns<DashboardNote[]>()
+      .returns<DashboardNote[]>(),
+    supabase
+      .from("recurring_bills")
+      .select("id, name, amount, due_day, active")
+      .eq("household_id", household.id)
+      .eq("active", true)
+      .returns<DashboardBill[]>()
   ]);
 
   if (tasksError) {
@@ -129,12 +144,18 @@ export default async function DashboardPage() {
     throw new Error(notesError.message);
   }
 
+  if (billsError) {
+    throw new Error(billsError.message);
+  }
+
   const openTasks = tasks ?? [];
   const groceries = groceryItems ?? [];
   const monthlyTransactions = transactions ?? [];
   const plannedMeals = meals ?? [];
   const maintenanceItems = maintenance ?? [];
   const pinnedNotes = notes ?? [];
+  const activeBills = (bills ?? []).filter((bill) => bill.due_day).sort(compareBillsByNextDueDate);
+  const nextBill = activeBills[0];
   const monthlyIncome = monthlyTransactions
     .filter((transaction) => transaction.type === "income")
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
@@ -158,7 +179,11 @@ export default async function DashboardPage() {
         <StatCard label="Monthly spending" value={formatCurrency(monthlyExpenses)} detail={`${formatCurrency(monthlyIncome)} income`} />
         <StatCard label="Open tasks" value={String(openTasks.length)} detail={`${dueTodayCount} due today`} />
         <StatCard label="Grocery items" value={String(groceries.length)} detail="Still needed" />
-        <StatCard label="Upcoming bills" value="3" detail="Next due in 4 days" />
+        <StatCard
+          label="Upcoming bills"
+          value={String(activeBills.length)}
+          detail={nextBill ? `${nextBill.name} due ${formatDate(toIsoDate(getNextBillDueDate(nextBill.due_day ?? 1)))}` : "No active bills"}
+        />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
@@ -311,4 +336,37 @@ function getTopExpenseCategories(transactions: DashboardTransaction[]) {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+}
+
+function getNextBillDueDate(dueDay: number) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), clampBillDay(now.getFullYear(), now.getMonth(), dueDay));
+
+  if (thisMonth >= today) {
+    return thisMonth;
+  }
+
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampBillDay(nextMonth.getFullYear(), nextMonth.getMonth(), dueDay));
+}
+
+function compareBillsByNextDueDate(a: DashboardBill, b: DashboardBill) {
+  const aDate = a.due_day ? getNextBillDueDate(a.due_day).getTime() : Number.MAX_SAFE_INTEGER;
+  const bDate = b.due_day ? getNextBillDueDate(b.due_day).getTime() : Number.MAX_SAFE_INTEGER;
+
+  return aDate - bDate;
+}
+
+function clampBillDay(year: number, monthIndex: number, dueDay: number) {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  return Math.min(Math.max(dueDay, 1), lastDay);
+}
+
+function toIsoDate(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
 }
