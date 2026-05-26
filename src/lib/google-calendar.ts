@@ -36,6 +36,10 @@ type GoogleEventResponse = {
   error?: {
     code?: number;
     message?: string;
+    errors?: Array<{
+      reason?: string;
+      message?: string;
+    }>;
     status?: string;
   };
 };
@@ -171,11 +175,22 @@ export async function syncTaskToGoogleCalendar(supabase: SupabaseClient, userId:
   const calendarEvent = (await response.json()) as GoogleEventResponse;
 
   if (!response.ok || !calendarEvent.id) {
+    const googleMessage = [
+      calendarEvent.error?.message,
+      calendarEvent.error?.errors?.map((detail) => detail.reason || detail.message).filter(Boolean).join(", ")
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     if (response.status === 401 || response.status === 403) {
-      throw new Error("Google Calendar needs permission to create events. Disconnect and reconnect Google Calendar in Settings.");
+      throw new Error(
+        googleMessage
+          ? `Google Calendar rejected the reminder (${response.status}): ${googleMessage}`
+          : "Google Calendar needs permission to create events. Disconnect and reconnect Google Calendar in Settings."
+      );
     }
 
-    throw new Error(calendarEvent.error?.message || "Could not create the Google Calendar reminder.");
+    throw new Error(googleMessage || "Could not create the Google Calendar reminder.");
   }
 
   const { error: updateError } = await supabase
