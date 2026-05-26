@@ -1,6 +1,7 @@
-import { Home, Mail, Trash2, UserRound } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, Home, Mail, Trash2, UserRound } from "lucide-react";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
-import { addHouseholdMember, removeHouseholdMember, renameHousehold } from "./actions";
+import { addHouseholdMember, disconnectGoogleCalendar, removeHouseholdMember, renameHousehold } from "./actions";
 
 type HouseholdMember = {
   user_id: string;
@@ -10,7 +11,17 @@ type HouseholdMember = {
   joined_at: string;
 };
 
-export default async function SettingsPage() {
+type GoogleConnection = {
+  google_email: string | null;
+  updated_at: string;
+};
+
+type SettingsPageProps = {
+  searchParams: Promise<{ google?: string; google_error?: string }>;
+};
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
+  const params = await searchParams;
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
 
@@ -25,15 +36,18 @@ export default async function SettingsPage() {
   const memberRows = (members ?? []) as HouseholdMember[];
   const currentMember = memberRows.find((member) => member.user_id === user.id);
   const isOwner = currentMember?.role === "owner";
+  const { data: googleConnection } = await supabase
+    .from("google_connections")
+    .select("google_email, updated_at")
+    .eq("user_id", user.id)
+    .maybeSingle<GoogleConnection>();
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6">
         <p className="text-sm font-medium text-sage">{household.name}</p>
         <h1 className="mt-1 text-2xl font-semibold text-ink">Settings</h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink/65">
-          Manage your household name, members, and basic account details.
-        </p>
+        <p className="mt-2 max-w-2xl text-sm text-ink/65">Manage your household name, members, and connected services.</p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
@@ -62,6 +76,56 @@ export default async function SettingsPage() {
               </button>
               {!isOwner ? <p className="text-sm text-ink/55">Only household owners can rename the household.</p> : null}
             </form>
+          </div>
+
+          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-blue" />
+              <h2 className="text-lg font-semibold text-ink">Google Calendar</h2>
+            </div>
+            {params.google === "connected" ? (
+              <p className="mb-3 rounded-md border border-sage/30 bg-sage/10 px-3 py-2 text-sm text-sage">
+                Google Calendar is connected.
+              </p>
+            ) : null}
+            {params.google_error ? (
+              <p className="mb-3 rounded-md border border-coral/40 bg-coral/10 px-3 py-2 text-sm text-coral">
+                {params.google_error}
+              </p>
+            ) : null}
+            {googleConnection ? (
+              <div className="space-y-3">
+                <div className="rounded-md border border-line bg-paper px-3 py-2 text-sm">
+                  <p className="font-medium text-ink">{googleConnection.google_email || "Google Calendar connected"}</p>
+                  <p className="mt-1 text-xs text-ink/55">Tasks can create reminder events on this calendar.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/api/google/connect"
+                    className="inline-flex h-10 items-center justify-center rounded-md border border-line px-4 text-sm font-semibold text-ink hover:bg-paper"
+                  >
+                    Reconnect
+                  </Link>
+                  <form action={disconnectGoogleCalendar}>
+                    <button className="inline-flex h-10 items-center justify-center rounded-md border border-line px-4 text-sm font-semibold text-coral hover:bg-coral/10">
+                      Disconnect
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-ink/60">
+                  Connect your personal Google Calendar to create reminder events from scheduled Home Hub tasks.
+                </p>
+                <Link
+                  href="/api/google/connect"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90"
+                >
+                  Connect Google Calendar
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-line bg-white p-4 shadow-sm">

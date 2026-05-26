@@ -36,6 +36,9 @@ Add your Supabase values to `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-or-secret-key
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+GOOGLE_CALENDAR_TIME_ZONE=America/Chicago
 ```
 
 Start the app:
@@ -60,6 +63,7 @@ supabase/migrations/0002_auto_household_for_new_users.sql
 supabase/migrations/0003_allow_household_creator_select.sql
 supabase/migrations/0004_create_household_rpc.sql
 supabase/migrations/0005_household_member_management.sql
+supabase/migrations/0006_google_calendar_tasks.sql
 ```
 
 Supabase Auth settings:
@@ -78,6 +82,9 @@ Supabase Auth settings:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_CALENDAR_TIME_ZONE
 ```
 
 4. Deploy.
@@ -127,5 +134,6 @@ supabase/
 - Vercel has all required environment variables.
 - Supabase migrations have all been run.
 - Supabase Auth redirect URLs include local and production URLs.
+- Google OAuth redirect URLs include `/api/google/callback` for local and production.
 - First owner account can sign up.
 - Owner can add a household member after that member signs up.

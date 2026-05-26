@@ -1,6 +1,7 @@
-import { Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { CalendarClock, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
-import { addTask, deleteTask, toggleTask } from "./actions";
+import { addTask, createCalendarReminder, deleteTask, toggleTask } from "./actions";
 
 type Task = {
   id: string;
@@ -9,7 +10,16 @@ type Task = {
   priority: "low" | "normal" | "high";
   status: "open" | "done" | "archived";
   due_date: string | null;
+  due_time: string | null;
+  reminder_minutes: number;
+  google_calendar_event_id: string | null;
+  google_calendar_html_link: string | null;
+  google_calendar_synced_at: string | null;
   created_at: string;
+};
+
+type GoogleConnection = {
+  user_id: string;
 };
 
 const priorityStyles = {
@@ -24,7 +34,9 @@ export default async function TasksPage() {
 
   const { data: tasks, error } = await supabase
     .from("tasks")
-    .select("id, title, description, priority, status, due_date, created_at")
+    .select(
+      "id, title, description, priority, status, due_date, due_time, reminder_minutes, google_calendar_event_id, google_calendar_html_link, google_calendar_synced_at, created_at"
+    )
     .eq("household_id", household.id)
     .neq("status", "archived")
     .order("status", { ascending: false })
@@ -35,6 +47,12 @@ export default async function TasksPage() {
   if (error) {
     throw new Error(error.message);
   }
+
+  const { data: googleConnection } = await supabase
+    .from("google_connections")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle<GoogleConnection>();
 
   const openTasks = tasks?.filter((task) => task.status === "open") ?? [];
   const doneTasks = tasks?.filter((task) => task.status === "done") ?? [];
@@ -61,7 +79,7 @@ export default async function TasksPage() {
       </div>
 
       <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
-        <form action={addTask} className="grid gap-3 lg:grid-cols-[1.1fr_1fr_0.7fr_0.6fr_auto]">
+        <form action={addTask} className="grid gap-3 lg:grid-cols-[1.1fr_1fr_0.65fr_0.55fr_0.7fr_0.55fr_auto]">
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Task</span>
             <input
@@ -88,6 +106,28 @@ export default async function TasksPage() {
             />
           </label>
           <label className="block">
+            <span className="text-xs font-medium uppercase text-ink/50">Time</span>
+            <input
+              name="due_time"
+              type="time"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium uppercase text-ink/50">Reminder</span>
+            <select
+              name="reminder_minutes"
+              defaultValue="30"
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+            >
+              <option value="0">At time</option>
+              <option value="10">10 min</option>
+              <option value="30">30 min</option>
+              <option value="60">1 hour</option>
+              <option value="1440">1 day</option>
+            </select>
+          </label>
+          <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Priority</span>
             <select
               name="priority"
@@ -107,14 +147,24 @@ export default async function TasksPage() {
       </section>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.7fr]">
-        <TaskList title="Open tasks" tasks={openTasks} />
-        <TaskList title="Done" tasks={doneTasks} doneList />
+        <TaskList title="Open tasks" tasks={openTasks} googleConnected={Boolean(googleConnection)} />
+        <TaskList title="Done" tasks={doneTasks} googleConnected={Boolean(googleConnection)} doneList />
       </div>
     </div>
   );
 }
 
-function TaskList({ title, tasks, doneList = false }: { title: string; tasks: Task[]; doneList?: boolean }) {
+function TaskList({
+  title,
+  tasks,
+  googleConnected,
+  doneList = false
+}: {
+  title: string;
+  tasks: Task[];
+  googleConnected: boolean;
+  doneList?: boolean;
+}) {
   return (
     <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
@@ -132,7 +182,7 @@ function TaskList({ title, tasks, doneList = false }: { title: string; tasks: Ta
       ) : (
         <div className="space-y-2">
           {tasks.map((task) => (
-            <div key={task.id} className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2">
+            <div key={task.id} className="flex flex-col gap-3 rounded-md border border-line px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <form action={toggleTask} className="flex min-w-0 flex-1 items-center gap-3">
                 <input type="hidden" name="id" value={task.id} />
                 <input type="hidden" name="status" value={task.status === "done" ? "open" : "done"} />
@@ -158,17 +208,68 @@ function TaskList({ title, tasks, doneList = false }: { title: string; tasks: Ta
                     </span>
                   </div>
                   <p className="mt-1 truncate text-xs text-ink/50">
-                    {[task.description, task.due_date ? `Due ${formatDate(task.due_date)}` : null].filter(Boolean).join(" · ") ||
-                      "No details"}
+                    {[
+                      task.description,
+                      task.due_date ? `Due ${formatDate(task.due_date)}${task.due_time ? ` at ${formatTime(task.due_time)}` : ""}` : null,
+                      task.google_calendar_synced_at ? "Google reminder added" : null
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "No details"}
                   </p>
                 </div>
               </form>
-              <form action={deleteTask}>
-                <input type="hidden" name="id" value={task.id} />
-                <button className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-coral" aria-label={`Delete ${task.title}`}>
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </form>
+              <div className="flex shrink-0 flex-wrap items-center gap-2 pl-7 sm:pl-0">
+                {task.status === "open" ? (
+                  googleConnected ? (
+                    task.due_date && task.due_time ? (
+                      <form action={createCalendarReminder} className="flex items-center gap-2">
+                        <input type="hidden" name="id" value={task.id} />
+                        <select
+                          name="reminder_minutes"
+                          defaultValue={String(task.reminder_minutes ?? 30)}
+                          className="h-9 rounded-md border border-line bg-white px-2 text-xs outline-none focus:border-sage"
+                          aria-label={`Reminder timing for ${task.title}`}
+                        >
+                          <option value="0">At time</option>
+                          <option value="10">10 min</option>
+                          <option value="30">30 min</option>
+                          <option value="60">1 hour</option>
+                          <option value="1440">1 day</option>
+                        </select>
+                        <button
+                          className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-xs font-semibold text-ink hover:bg-paper"
+                          aria-label={`${task.google_calendar_event_id ? "Update" : "Add"} Google Calendar reminder for ${task.title}`}
+                        >
+                          <CalendarClock className="h-4 w-4" />
+                          {task.google_calendar_event_id ? "Update" : "Remind"}
+                        </button>
+                      </form>
+                    ) : (
+                      <span className="rounded-md border border-line bg-paper px-3 py-2 text-xs text-ink/55">Needs date and time</span>
+                    )
+                  ) : (
+                    <Link href="/settings" className="rounded-md border border-line px-3 py-2 text-xs font-semibold text-ink hover:bg-paper">
+                      Connect calendar
+                    </Link>
+                  )
+                ) : null}
+                {task.google_calendar_html_link ? (
+                  <Link
+                    href={task.google_calendar_html_link}
+                    target="_blank"
+                    className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-blue"
+                    aria-label={`Open Google Calendar event for ${task.title}`}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                ) : null}
+                <form action={deleteTask}>
+                  <input type="hidden" name="id" value={task.id} />
+                  <button className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-coral" aria-label={`Delete ${task.title}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </form>
+              </div>
             </div>
           ))}
         </div>
@@ -184,4 +285,10 @@ function todayIsoDate() {
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
+}
+
+function formatTime(value: string) {
+  const [hour, minute] = value.split(":");
+  const date = new Date(`2020-01-01T${hour}:${minute}:00`);
+  return new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(date);
 }
