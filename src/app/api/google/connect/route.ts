@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getGoogleCalendarEnv } from "@/lib/google-calendar";
+import { getGoogleCalendarEnv, hasGoogleCalendarEnv } from "@/lib/google-calendar";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_SCOPES = [
@@ -17,6 +17,12 @@ export async function GET(request: NextRequest) {
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (!hasGoogleCalendarEnv()) {
+    const settingsUrl = new URL("/settings", request.url);
+    settingsUrl.searchParams.set("google_error", "Google Calendar setup is missing the Google Client ID or Client Secret.");
+    return NextResponse.redirect(settingsUrl);
   }
 
   const { clientId } = getGoogleCalendarEnv();

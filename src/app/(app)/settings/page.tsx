@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Home, Mail, Trash2, UserRound } from "lucide-react";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
+import { hasGoogleCalendarEnv } from "@/lib/google-calendar";
 import { addHouseholdMember, disconnectGoogleCalendar, removeHouseholdMember, renameHousehold } from "./actions";
 
 type HouseholdMember = {
@@ -41,6 +42,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     .select("google_email, updated_at")
     .eq("user_id", user.id)
     .maybeSingle<GoogleConnection>();
+  const googleConfigured = hasGoogleCalendarEnv();
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -93,6 +95,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 {params.google_error}
               </p>
             ) : null}
+            {!googleConfigured ? (
+              <p className="mb-3 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-ink/70">
+                Add Google Client ID and Client Secret in Vercel before connecting a calendar.
+              </p>
+            ) : null}
             {googleConnection ? (
               <div className="space-y-3">
                 <div className="rounded-md border border-line bg-paper px-3 py-2 text-sm">
@@ -100,12 +107,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   <p className="mt-1 text-xs text-ink/55">Tasks can create reminder events on this calendar.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Link
-                    href="/api/google/connect"
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-line px-4 text-sm font-semibold text-ink hover:bg-paper"
-                  >
-                    Reconnect
-                  </Link>
+                  {googleConfigured ? (
+                    <Link
+                      href="/api/google/connect"
+                      className="inline-flex h-10 items-center justify-center rounded-md border border-line px-4 text-sm font-semibold text-ink hover:bg-paper"
+                    >
+                      Reconnect
+                    </Link>
+                  ) : null}
                   <form action={disconnectGoogleCalendar}>
                     <button className="inline-flex h-10 items-center justify-center rounded-md border border-line px-4 text-sm font-semibold text-coral hover:bg-coral/10">
                       Disconnect
@@ -118,12 +127,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 <p className="text-sm text-ink/60">
                   Connect your personal Google Calendar to create reminder events from scheduled Home Hub tasks.
                 </p>
-                <Link
-                  href="/api/google/connect"
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90"
-                >
-                  Connect Google Calendar
-                </Link>
+                {googleConfigured ? (
+                  <Link
+                    href="/api/google/connect"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90"
+                  >
+                    Connect Google Calendar
+                  </Link>
+                ) : (
+                  <span className="inline-flex h-10 items-center justify-center rounded-md bg-ink/30 px-4 text-sm font-semibold text-white">
+                    Connect Google Calendar
+                  </span>
+                )}
               </div>
             )}
           </div>

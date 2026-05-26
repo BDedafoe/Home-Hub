@@ -50,6 +50,10 @@ export function getGoogleCalendarEnv() {
   return { clientId, clientSecret, timeZone };
 }
 
+export function hasGoogleCalendarEnv() {
+  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+}
+
 export async function getValidGoogleAccessToken(supabase: SupabaseClient, userId: string) {
   const { data: connection, error } = await supabase
     .from("google_connections")
