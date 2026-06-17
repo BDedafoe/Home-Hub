@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
 
 const transactionTypes = new Set(["income", "expense"]);
@@ -20,6 +21,7 @@ export async function addTransaction(formData: FormData) {
   const merchant = String(formData.get("merchant") ?? "").trim() || null;
   const note = String(formData.get("note") ?? "").trim() || null;
   const transactionDate = String(formData.get("transaction_date") ?? "").trim() || new Date().toISOString().slice(0, 10);
+  const month = getReturnMonth(formData, transactionDate);
 
   const { error } = await supabase.from("transactions").insert({
     household_id: household.id,
@@ -38,11 +40,13 @@ export async function addTransaction(formData: FormData) {
 
   revalidatePath("/money");
   revalidatePath("/dashboard");
+  redirect(`/money?month=${month}`);
 }
 
 export async function deleteTransaction(formData: FormData) {
   const { supabase } = await getCurrentUser();
   const id = String(formData.get("id"));
+  const month = getReturnMonth(formData);
 
   const { error } = await supabase.from("transactions").delete().eq("id", id);
 
@@ -52,6 +56,7 @@ export async function deleteTransaction(formData: FormData) {
 
   revalidatePath("/money");
   revalidatePath("/dashboard");
+  redirect(`/money?month=${month}`);
 }
 
 export async function addRecurringBill(formData: FormData) {
@@ -85,6 +90,20 @@ export async function addRecurringBill(formData: FormData) {
 
   revalidatePath("/money");
   revalidatePath("/dashboard");
+}
+
+function getReturnMonth(formData: FormData, fallbackDate?: string) {
+  const month = String(formData.get("month") ?? "");
+
+  if (/^\d{4}-\d{2}$/.test(month)) {
+    return month;
+  }
+
+  if (fallbackDate && /^\d{4}-\d{2}-\d{2}$/.test(fallbackDate)) {
+    return fallbackDate.slice(0, 7);
+  }
+
+  return new Date().toISOString().slice(0, 7);
 }
 
 export async function toggleRecurringBill(formData: FormData) {

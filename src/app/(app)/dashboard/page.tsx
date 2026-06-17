@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDollarSign, ShoppingCart, Soup, StickyNote, Wrench } from "lucide-react";
+import { BarChart3, CheckCircle2, CircleDollarSign, ShoppingCart, Soup, StickyNote, Wrench } from "lucide-react";
 import { StatCard } from "@/components/stat-card";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
 
@@ -18,6 +18,16 @@ type DashboardTransaction = {
   type: "income" | "expense";
   amount: number;
   category: string;
+};
+
+type DashboardYearTransaction = DashboardTransaction & {
+  transaction_date: string;
+};
+
+type MonthSummary = {
+  month: string;
+  income: number;
+  expenses: number;
 };
 
 type DashboardMeal = {
@@ -55,11 +65,14 @@ export default async function DashboardPage() {
   const household = await getOrCreateHousehold(user);
   const today = new Date().toISOString().slice(0, 10);
   const { start, end } = getCurrentMonthRange();
+  const year = new Date().getFullYear();
+  const { start: yearStart, end: yearEnd } = getYearRange(year);
 
   const [
     { data: tasks, error: tasksError },
     { data: groceryItems, error: groceriesError },
     { data: transactions, error: transactionsError },
+    { data: yearTransactions, error: yearTransactionsError },
     { data: meals, error: mealsError },
     { data: maintenance, error: maintenanceError },
     { data: notes, error: notesError },
@@ -88,6 +101,13 @@ export default async function DashboardPage() {
       .gte("transaction_date", start)
       .lte("transaction_date", end)
       .returns<DashboardTransaction[]>(),
+    supabase
+      .from("transactions")
+      .select("type, amount, category, transaction_date")
+      .eq("household_id", household.id)
+      .gte("transaction_date", yearStart)
+      .lte("transaction_date", yearEnd)
+      .returns<DashboardYearTransaction[]>(),
     supabase
       .from("meal_plan_items")
       .select("id, meal_date, meal_type, recipes(title)")
@@ -132,6 +152,10 @@ export default async function DashboardPage() {
     throw new Error(transactionsError.message);
   }
 
+  if (yearTransactionsError) {
+    throw new Error(yearTransactionsError.message);
+  }
+
   if (mealsError) {
     throw new Error(mealsError.message);
   }
@@ -151,6 +175,7 @@ export default async function DashboardPage() {
   const openTasks = tasks ?? [];
   const groceries = groceryItems ?? [];
   const monthlyTransactions = transactions ?? [];
+  const annualTransactions = yearTransactions ?? [];
   const plannedMeals = meals ?? [];
   const maintenanceItems = maintenance ?? [];
   const pinnedNotes = notes ?? [];
@@ -164,6 +189,9 @@ export default async function DashboardPage() {
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   const topCategories = getTopExpenseCategories(monthlyTransactions).slice(0, 3);
   const dueTodayCount = openTasks.filter((task) => task.due_date === today).length;
+  const yearSummaries = getMonthSummaries(annualTransactions, year);
+  const yearIncome = yearSummaries.reduce((sum, month) => sum + month.income, 0);
+  const yearExpenses = yearSummaries.reduce((sum, month) => sum + month.expenses, 0);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -187,6 +215,47 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm lg:col-span-2">
+          <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-coral" />
+              <h2 className="text-lg font-semibold text-ink">{year} income vs expenses</h2>
+            </div>
+            <p className="text-sm text-ink/55">
+              {formatCurrency(yearIncome)} in · {formatCurrency(yearExpenses)} out · Net {formatCurrency(yearIncome - yearExpenses)}
+            </p>
+          </div>
+          <div className="grid h-52 grid-cols-12 items-end gap-2 border-b border-line pb-3">
+            {yearSummaries.map((month) => (
+              <div key={month.month} className="flex h-full min-w-0 flex-col justify-end gap-1">
+                <div className="flex flex-1 items-end gap-1">
+                  <div
+                    className="w-full rounded-t bg-sage/80"
+                    style={{ height: `${getChartHeight(month.income, yearSummaries)}%` }}
+                    title={`${formatShortMonthLabel(month.month)} income ${formatCurrency(month.income)}`}
+                  />
+                  <div
+                    className="w-full rounded-t bg-coral/80"
+                    style={{ height: `${getChartHeight(month.expenses, yearSummaries)}%` }}
+                    title={`${formatShortMonthLabel(month.month)} expenses ${formatCurrency(month.expenses)}`}
+                  />
+                </div>
+                <span className="truncate text-center text-[10px] font-medium uppercase text-ink/45">{formatShortMonthLabel(month.month)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-4 text-xs text-ink/55">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-sage" />
+              Income
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-coral" />
+              Expenses
+            </span>
+          </div>
+        </section>
+
         <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-sage" />
@@ -320,6 +389,47 @@ function getCurrentMonthRange() {
   return { start, end };
 }
 
+function getYearRange(year: number) {
+  return {
+    start: `${year}-01-01`,
+    end: `${year}-12-31`
+  };
+}
+
+function getMonthSummaries(transactions: DashboardYearTransaction[], year: number): MonthSummary[] {
+  const summaries = Array.from({ length: 12 }, (_, index) => ({
+    month: [year, String(index + 1).padStart(2, "0")].join("-"),
+    income: 0,
+    expenses: 0
+  }));
+
+  transactions.forEach((transaction) => {
+    const summary = summaries.find((item) => item.month === transaction.transaction_date.slice(0, 7));
+
+    if (!summary) {
+      return;
+    }
+
+    if (transaction.type === "income") {
+      summary.income += Number(transaction.amount);
+    } else {
+      summary.expenses += Number(transaction.amount);
+    }
+  });
+
+  return summaries;
+}
+
+function getChartHeight(value: number, summaries: MonthSummary[]) {
+  const max = Math.max(1, ...summaries.flatMap((summary) => [summary.income, summary.expenses]));
+
+  if (value <= 0) {
+    return 2;
+  }
+
+  return Math.max(8, Math.round((value / max) * 100));
+}
+
 function getTopExpenseCategories(transactions: DashboardTransaction[]) {
   const totals = new Map<string, number>();
 
@@ -336,6 +446,11 @@ function getTopExpenseCategories(transactions: DashboardTransaction[]) {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+}
+
+function formatShortMonthLabel(value: string) {
+  const date = new Date(`${value}-01T00:00:00`);
+  return new Intl.DateTimeFormat("en", { month: "short" }).format(date);
 }
 
 function getNextBillDueDate(dueDay: number) {

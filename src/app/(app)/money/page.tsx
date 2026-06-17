@@ -1,4 +1,5 @@
-import { ArrowDownCircle, ArrowUpCircle, CalendarDays, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ArrowDownCircle, ArrowLeft, ArrowRight, ArrowUpCircle, CalendarDays, Plus, Trash2 } from "lucide-react";
 import { StatCard } from "@/components/stat-card";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
 import { addRecurringBill, addTransaction, deleteRecurringBill, deleteTransaction, toggleRecurringBill } from "./actions";
@@ -25,6 +26,12 @@ type RecurringBill = {
   created_at: string;
 };
 
+type MonthSummary = {
+  month: string;
+  income: number;
+  expenses: number;
+};
+
 const categories = [
   "Groceries",
   "Dining out",
@@ -40,12 +47,23 @@ const categories = [
   "Miscellaneous"
 ];
 
-export default async function MoneyPage() {
+type MoneyPageProps = {
+  searchParams: Promise<{ month?: string }>;
+};
+
+export default async function MoneyPage({ searchParams }: MoneyPageProps) {
+  const params = await searchParams;
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
-  const { start, end } = getCurrentMonthRange();
+  const selectedMonth = parseMonthParam(params.month);
+  const { start, end } = getMonthRange(selectedMonth);
+  const { start: yearStart, end: yearEnd } = getYearRange(Number(selectedMonth.slice(0, 4)));
 
-  const [{ data: transactions, error }, { data: recurringBills, error: billsError }] = await Promise.all([
+  const [
+    { data: transactions, error },
+    { data: yearTransactions, error: yearTransactionsError },
+    { data: recurringBills, error: billsError }
+  ] = await Promise.all([
     supabase
       .from("transactions")
       .select("id, type, amount, category, merchant, note, transaction_date, created_at")
@@ -54,6 +72,14 @@ export default async function MoneyPage() {
       .lte("transaction_date", end)
       .order("transaction_date", { ascending: false })
       .order("created_at", { ascending: false })
+      .returns<Transaction[]>(),
+    supabase
+      .from("transactions")
+      .select("id, type, amount, category, merchant, note, transaction_date, created_at")
+      .eq("household_id", household.id)
+      .gte("transaction_date", yearStart)
+      .lte("transaction_date", yearEnd)
+      .order("transaction_date", { ascending: false })
       .returns<Transaction[]>(),
     supabase
       .from("recurring_bills")
@@ -68,11 +94,16 @@ export default async function MoneyPage() {
     throw new Error(error.message);
   }
 
+  if (yearTransactionsError) {
+    throw new Error(yearTransactionsError.message);
+  }
+
   if (billsError) {
     throw new Error(billsError.message);
   }
 
   const rows = transactions ?? [];
+  const yearRows = yearTransactions ?? [];
   const bills = (recurringBills ?? []).sort(compareBillsByNextDueDate);
   const activeBills = bills.filter((bill) => bill.active);
   const income = rows.filter((row) => row.type === "income").reduce((sum, row) => sum + Number(row.amount), 0);
@@ -80,6 +111,11 @@ export default async function MoneyPage() {
   const net = income - expenses;
   const categoryTotals = getExpenseCategoryTotals(rows);
   const billTotal = activeBills.reduce((sum, bill) => sum + Number(bill.amount ?? 0), 0);
+  const monthSummaries = getMonthSummaries(yearRows, Number(selectedMonth.slice(0, 4)));
+  const yearIncome = monthSummaries.reduce((sum, month) => sum + month.income, 0);
+  const yearExpenses = monthSummaries.reduce((sum, month) => sum + month.expenses, 0);
+  const previousMonth = shiftMonth(selectedMonth, -1);
+  const nextMonth = shiftMonth(selectedMonth, 1);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -88,22 +124,47 @@ export default async function MoneyPage() {
           <p className="text-sm font-medium text-sage">{household.name}</p>
           <h1 className="mt-1 text-2xl font-semibold text-ink">Money</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink/65">
-            Track household income and spending for the current month.
+            Track household income and spending by month, then compare the year as it builds.
           </p>
         </div>
-        <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
-          {formatMonthLabel(start)}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/money?month=${previousMonth}`}
+            className="inline-flex h-10 items-center justify-center rounded-md border border-line px-3 text-ink/70 hover:bg-paper hover:text-ink"
+            aria-label="Previous month"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <form action="/money" className="flex items-center gap-2">
+            <input
+              name="month"
+              type="month"
+              defaultValue={selectedMonth}
+              className="h-10 rounded-md border border-line px-3 text-sm outline-none focus:border-sage"
+            />
+            <button className="h-10 rounded-md border border-line px-3 text-sm font-medium text-ink/70 hover:bg-paper hover:text-ink">
+              View
+            </button>
+          </form>
+          <Link
+            href={`/money?month=${nextMonth}`}
+            className="inline-flex h-10 items-center justify-center rounded-md border border-line px-3 text-ink/70 hover:bg-paper hover:text-ink"
+            aria-label="Next month"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
 
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         <StatCard label="Income" value={formatCurrency(income)} detail={`${rows.filter((row) => row.type === "income").length} entries`} />
         <StatCard label="Expenses" value={formatCurrency(expenses)} detail={`${rows.filter((row) => row.type === "expense").length} entries`} />
-        <StatCard label="Upcoming bills" value={String(activeBills.length)} detail={`${formatCurrency(billTotal)} scheduled`} />
+        <StatCard label="Net" value={formatCurrency(net)} detail={formatMonthLabel(start)} />
       </div>
 
       <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         <form action={addTransaction} className="grid gap-3 lg:grid-cols-[0.6fr_0.7fr_0.9fr_1fr_0.8fr_1fr_auto]">
+          <input type="hidden" name="month" value={selectedMonth} />
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Type</span>
             <select
@@ -176,6 +237,43 @@ export default async function MoneyPage() {
       </section>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
+          <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-lg font-semibold text-ink">{selectedMonth.slice(0, 4)} monthly history</h2>
+              <p className="mt-1 text-sm text-ink/55">
+                {formatCurrency(yearIncome)} income · {formatCurrency(yearExpenses)} expenses
+              </p>
+            </div>
+            <span className="rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink/60">
+              Year net {formatCurrency(yearIncome - yearExpenses)}
+            </span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {monthSummaries.map((month) => (
+              <Link
+                key={month.month}
+                href={`/money?month=${month.month}`}
+                className={
+                  month.month === selectedMonth
+                    ? "rounded-md border border-primary bg-primary/10 px-3 py-2"
+                    : "rounded-md border border-line px-3 py-2 hover:bg-paper"
+                }
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-ink">{formatShortMonthLabel(month.month)}</p>
+                  <p className={month.income - month.expenses >= 0 ? "text-xs font-medium text-sage" : "text-xs font-medium text-coral"}>
+                    {formatCurrency(month.income - month.expenses)}
+                  </p>
+                </div>
+                <p className="mt-1 text-xs text-ink/50">
+                  {formatCurrency(month.income)} in · {formatCurrency(month.expenses)} out
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <section className="rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-blue" />
@@ -287,7 +385,7 @@ export default async function MoneyPage() {
 
         <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-ink">Transactions</h2>
+            <h2 className="text-lg font-semibold text-ink">{formatMonthLabel(start)} transactions</h2>
             <span className="text-sm text-ink/55">{rows.length}</span>
           </div>
           {rows.length === 0 ? (
@@ -298,7 +396,7 @@ export default async function MoneyPage() {
           ) : (
             <div className="space-y-2">
               {rows.map((transaction) => (
-                <TransactionRow key={transaction.id} transaction={transaction} />
+                <TransactionRow key={transaction.id} transaction={transaction} month={selectedMonth} />
               ))}
             </div>
           )}
@@ -308,7 +406,7 @@ export default async function MoneyPage() {
   );
 }
 
-function TransactionRow({ transaction }: { transaction: Transaction }) {
+function TransactionRow({ transaction, month }: { transaction: Transaction; month: string }) {
   const isIncome = transaction.type === "income";
 
   return (
@@ -329,6 +427,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
         </span>
         <form action={deleteTransaction}>
           <input type="hidden" name="id" value={transaction.id} />
+          <input type="hidden" name="month" value={month} />
           <button
             className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-coral"
             aria-label={`Delete ${transaction.merchant || transaction.category}`}
@@ -394,12 +493,59 @@ function getExpenseCategoryTotals(transactions: Transaction[]) {
     .sort((a, b) => b.total - a.total);
 }
 
-function getCurrentMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+function parseMonthParam(value: string | undefined) {
+  if (value && /^\d{4}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  return new Date().toISOString().slice(0, 7);
+}
+
+function getMonthRange(month: string) {
+  const [year, monthValue] = month.split("-").map(Number);
+  const start = toIsoDate(new Date(year, monthValue - 1, 1));
+  const end = toIsoDate(new Date(year, monthValue, 0));
 
   return { start, end };
+}
+
+function getYearRange(year: number) {
+  return {
+    start: `${year}-01-01`,
+    end: `${year}-12-31`
+  };
+}
+
+function shiftMonth(month: string, offset: number) {
+  const [year, monthValue] = month.split("-").map(Number);
+  const date = new Date(year, monthValue - 1 + offset, 1);
+
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0")].join("-");
+}
+
+function getMonthSummaries(transactions: Transaction[], year: number): MonthSummary[] {
+  const summaries = Array.from({ length: 12 }, (_, index) => ({
+    month: [year, String(index + 1).padStart(2, "0")].join("-"),
+    income: 0,
+    expenses: 0
+  }));
+
+  transactions.forEach((transaction) => {
+    const month = transaction.transaction_date.slice(0, 7);
+    const summary = summaries.find((item) => item.month === month);
+
+    if (!summary) {
+      return;
+    }
+
+    if (transaction.type === "income") {
+      summary.income += Number(transaction.amount);
+    } else {
+      summary.expenses += Number(transaction.amount);
+    }
+  });
+
+  return summaries;
 }
 
 function formatCurrency(value: number) {
@@ -414,6 +560,11 @@ function formatDate(value: string) {
 function formatMonthLabel(value: string) {
   const date = new Date(`${value}T00:00:00`);
   return new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(date);
+}
+
+function formatShortMonthLabel(value: string) {
+  const date = new Date(`${value}-01T00:00:00`);
+  return new Intl.DateTimeFormat("en", { month: "short" }).format(date);
 }
 
 function getNextBillDueDate(dueDay: number) {
