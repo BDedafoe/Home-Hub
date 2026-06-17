@@ -10,6 +10,7 @@ const config: Config = {
         panel: "#0f1b22",
         line: "#223741",
         primary: "#df6d6d",
+        income: "#35e2c3",
         sage: "#f28f7f",
         coral: "#df6d6d",
         blue: "#ff9b85",

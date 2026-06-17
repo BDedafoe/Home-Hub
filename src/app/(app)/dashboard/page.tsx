@@ -230,7 +230,7 @@ export default async function DashboardPage() {
               <div key={month.month} className="flex h-full min-w-0 flex-col justify-end gap-1">
                 <div className="flex flex-1 items-end gap-1">
                   <div
-                    className="w-full rounded-t bg-sage/80"
+                    className="w-full rounded-t bg-income/80"
                     style={{ height: `${getChartHeight(month.income, yearSummaries)}%` }}
                     title={`${formatShortMonthLabel(month.month)} income ${formatCurrency(month.income)}`}
                   />
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-3 flex gap-4 text-xs text-ink/55">
             <span className="inline-flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-sage" />
+              <span className="h-2 w-2 rounded-full bg-income" />
               Income
             </span>
             <span className="inline-flex items-center gap-2">

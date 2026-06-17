@@ -262,7 +262,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-ink">{formatShortMonthLabel(month.month)}</p>
-                  <p className={month.income - month.expenses >= 0 ? "text-xs font-medium text-sage" : "text-xs font-medium text-coral"}>
+                  <p className={month.income - month.expenses >= 0 ? "text-xs font-medium text-income" : "text-xs font-medium text-coral"}>
                     {formatCurrency(month.income - month.expenses)}
                   </p>
                 </div>
@@ -373,7 +373,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
                   </div>
                   <div className="h-2 rounded-full bg-paper">
                     <div
-                      className="h-2 rounded-full bg-sage"
+                      className="h-2 rounded-full bg-income"
                       style={{ width: `${Math.max(8, Math.round((category.total / categoryTotals[0].total) * 100))}%` }}
                     />
                   </div>
@@ -412,7 +412,7 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2">
       <div className="flex min-w-0 items-center gap-3">
-        {isIncome ? <ArrowUpCircle className="h-5 w-5 shrink-0 text-sage" /> : <ArrowDownCircle className="h-5 w-5 shrink-0 text-coral" />}
+        {isIncome ? <ArrowUpCircle className="h-5 w-5 shrink-0 text-income" /> : <ArrowDownCircle className="h-5 w-5 shrink-0 text-coral" />}
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-ink">{transaction.merchant || transaction.category}</p>
           <p className="truncate text-xs text-ink/50">
@@ -421,7 +421,7 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className={isIncome ? "text-sm font-semibold text-sage" : "text-sm font-semibold text-ink"}>
+        <span className={isIncome ? "text-sm font-semibold text-income" : "text-sm font-semibold text-ink"}>
           {isIncome ? "+" : "-"}
           {formatCurrency(Number(transaction.amount))}
         </span>
