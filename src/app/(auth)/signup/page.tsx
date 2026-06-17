@@ -43,7 +43,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 outline-none focus:border-sage"
             />
           </label>
-          <button className="w-full rounded-md bg-sage px-4 py-2.5 text-sm font-semibold text-paper hover:bg-sage/90">
+          <button className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-paper hover:bg-primary/90">
             Create account
           </button>
         </form>

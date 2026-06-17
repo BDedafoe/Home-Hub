@@ -9,10 +9,11 @@ const config: Config = {
         paper: "#071115",
         panel: "#0f1b22",
         line: "#223741",
-        sage: "#35e2c3",
-        coral: "#ff6f61",
-        blue: "#4bb7ff",
-        gold: "#ffd166"
+        primary: "#df6d6d",
+        sage: "#f28f7f",
+        coral: "#df6d6d",
+        blue: "#ff9b85",
+        gold: "#ffc7a3"
       }
     }
   },

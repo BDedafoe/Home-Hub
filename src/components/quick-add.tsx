@@ -44,7 +44,7 @@ export function QuickAdd() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center gap-2 rounded-md bg-sage px-3 py-2 text-sm font-semibold text-paper hover:bg-sage/90"
+        className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-paper hover:bg-primary/90"
       >
         <Plus className="h-4 w-4" />
         <span className="hidden sm:inline">Quick add</span>
@@ -90,7 +90,7 @@ export function QuickAdd() {
             {error ? <p className="rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p> : null}
             <button
               disabled={isPending}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
               {isPending ? "Adding..." : `Add ${modes.find((item) => item.id === mode)?.label}`}

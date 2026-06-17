@@ -154,7 +154,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
               <option value="high">High</option>
             </select>
           </label>
-          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
+          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90">
             <Plus className="h-4 w-4" />
             Add
           </button>

@@ -12,7 +12,7 @@ export function ModulePage({ title, description, children }: ModulePageProps) {
           <h1 className="text-2xl font-semibold text-ink">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink/65">{description}</p>
         </div>
-        <button className="rounded-md bg-sage px-4 py-2 text-sm font-semibold text-paper hover:bg-sage/90">
+        <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-paper hover:bg-primary/90">
           Quick add
         </button>
       </div>

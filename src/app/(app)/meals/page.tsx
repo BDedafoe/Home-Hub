@@ -129,7 +129,7 @@ export default async function MealsPage() {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
             />
           </label>
-          <button className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
+          <button className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90">
             <Plus className="h-4 w-4" />
             Save
           </button>
@@ -317,7 +317,7 @@ function MealPlanner({ recipes }: { recipes: Recipe[] }) {
             className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
           />
         </label>
-        <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
+        <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90">
           <Plus className="h-4 w-4" />
           Plan
         </button>

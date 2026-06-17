@@ -72,7 +72,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </label>
               <button
                 disabled={!isOwner}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Save name
               </button>
@@ -130,12 +130,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 {googleConfigured ? (
                   <Link
                     href="/api/google/connect"
-                    className="inline-flex h-10 items-center justify-center rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90"
                   >
                     Connect Google Calendar
                   </Link>
                 ) : (
-                  <span className="inline-flex h-10 items-center justify-center rounded-md bg-sage/30 px-4 text-sm font-semibold text-paper">
+                  <span className="inline-flex h-10 items-center justify-center rounded-md bg-primary/30 px-4 text-sm font-semibold text-paper">
                     Connect Google Calendar
                   </span>
                 )}
@@ -162,7 +162,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </label>
               <button
                 disabled={!isOwner}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add member
               </button>

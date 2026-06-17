@@ -168,7 +168,7 @@ export default async function MoneyPage() {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
             />
           </label>
-          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
+          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90">
             <Plus className="h-4 w-4" />
             Add
           </button>
@@ -235,7 +235,7 @@ export default async function MoneyPage() {
               <input name="autopay" type="checkbox" className="h-4 w-4 rounded border-line text-sage" />
               Autopay
             </label>
-            <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
+            <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90">
               <Plus className="h-4 w-4" />
               Add
             </button>

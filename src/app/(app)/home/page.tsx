@@ -96,7 +96,7 @@ export default async function HomePage() {
               <DateField name="purchase_date" label="Purchase date" />
               <DateField name="warranty_expires" label="Warranty expires" />
               <TextField name="notes" label="Notes" placeholder="Filter size, model number, contractor" />
-              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 sm:col-span-2">
+              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 sm:col-span-2">
                 <Plus className="h-4 w-4" />
                 Add asset
               </button>
@@ -114,7 +114,7 @@ export default async function HomePage() {
               <DateField name="due_date" label="Due date" />
               <SelectField name="repeat_rule" label="Repeat" options={repeatOptions} />
               <TextField name="notes" label="Notes" placeholder="20x25x1 filter" />
-              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 sm:col-span-2">
+              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 sm:col-span-2">
                 <Plus className="h-4 w-4" />
                 Add reminder
               </button>
