@@ -54,7 +54,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
       <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
         <section className="space-y-5">
-          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <Home className="h-5 w-5 text-sage" />
               <h2 className="text-lg font-semibold text-ink">Household</h2>
@@ -72,7 +72,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </label>
               <button
                 disabled={!isOwner}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Save name
               </button>
@@ -80,7 +80,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </form>
           </div>
 
-          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-blue" />
               <h2 className="text-lg font-semibold text-ink">Google Calendar</h2>
@@ -130,12 +130,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 {googleConfigured ? (
                   <Link
                     href="/api/google/connect"
-                    className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90"
                   >
                     Connect Google Calendar
                   </Link>
                 ) : (
-                  <span className="inline-flex h-10 items-center justify-center rounded-md bg-ink/30 px-4 text-sm font-semibold text-white">
+                  <span className="inline-flex h-10 items-center justify-center rounded-md bg-sage/30 px-4 text-sm font-semibold text-paper">
                     Connect Google Calendar
                   </span>
                 )}
@@ -143,7 +143,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             )}
           </div>
 
-          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <Mail className="h-5 w-5 text-blue" />
               <h2 className="text-lg font-semibold text-ink">Add member</h2>
@@ -162,7 +162,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </label>
               <button
                 disabled={!isOwner}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add member
               </button>
@@ -170,7 +170,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </form>
           </div>
 
-          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <UserRound className="h-5 w-5 text-gold" />
               <h2 className="text-lg font-semibold text-ink">Your account</h2>
@@ -188,7 +188,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </div>
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Household members</h2>
             <span className="text-sm text-ink/55">{memberRows.length}</span>

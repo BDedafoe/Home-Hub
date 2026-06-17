@@ -43,12 +43,12 @@ export default async function GroceriesPage() {
             Keep the shared list current from either phone. Checked items stay visible until deleted.
           </p>
         </div>
-        <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+        <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
           {openItems.length} still needed
         </div>
       </div>
 
-      <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         <form action={addGroceryItem} className="grid gap-3 md:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_auto]">
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Item</span>
@@ -71,7 +71,7 @@ export default async function GroceriesPage() {
             <span className="text-xs font-medium uppercase text-ink/50">Category</span>
             <select
               name="category"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
               defaultValue=""
             >
               <option value="">Select</option>
@@ -90,7 +90,7 @@ export default async function GroceriesPage() {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
             />
           </label>
-          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
             <Plus className="h-4 w-4" />
             Add
           </button>
@@ -115,7 +115,7 @@ function GroceryList({
   checkedList?: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <span className="text-sm text-ink/55">{items.length}</span>
@@ -139,7 +139,7 @@ function GroceryList({
                 <input type="hidden" name="id" value={item.id} />
                 <input type="hidden" name="checked" value={String(!item.checked)} />
                 <button
-                  className="h-4 w-4 shrink-0 rounded border border-line bg-white ring-offset-2 hover:border-sage focus:outline-none focus:ring-2 focus:ring-sage"
+                  className="h-4 w-4 shrink-0 rounded border border-line bg-panel ring-offset-2 hover:border-sage focus:outline-none focus:ring-2 focus:ring-sage"
                   aria-label={item.checked ? `Mark ${item.name} as needed` : `Mark ${item.name} as bought`}
                 >
                   {item.checked ? <span className="block h-full w-full rounded-sm bg-sage" /> : null}

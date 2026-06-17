@@ -5,13 +5,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#17201b",
-        paper: "#f7f5ef",
-        line: "#ded9cd",
-        sage: "#6f8f72",
-        coral: "#d96f57",
-        blue: "#4776a8",
-        gold: "#c99a35"
+        ink: "#e8f7f3",
+        paper: "#071115",
+        panel: "#0f1b22",
+        line: "#223741",
+        sage: "#35e2c3",
+        coral: "#ff6f61",
+        blue: "#4bb7ff",
+        gold: "#ffd166"
       }
     }
   },

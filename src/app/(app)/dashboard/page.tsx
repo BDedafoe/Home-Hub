@@ -187,7 +187,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-sage" />
             <h2 className="text-lg font-semibold text-ink">Today</h2>
@@ -206,7 +206,7 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <CircleDollarSign className="h-5 w-5 text-blue" />
             <h2 className="text-lg font-semibold text-ink">Money snapshot</h2>
@@ -225,7 +225,7 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <Soup className="h-5 w-5 text-coral" />
             <h2 className="text-lg font-semibold text-ink">Meal plan</h2>
@@ -244,7 +244,7 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-gold" />
             <h2 className="text-lg font-semibold text-ink">Groceries</h2>
@@ -262,7 +262,7 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <Wrench className="h-5 w-5 text-blue" />
             <h2 className="text-lg font-semibold text-ink">Home maintenance</h2>
@@ -281,7 +281,7 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <StickyNote className="h-5 w-5 text-sage" />
             <h2 className="text-lg font-semibold text-ink">Pinned notes</h2>

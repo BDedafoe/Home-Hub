@@ -83,12 +83,12 @@ export default async function MealsPage() {
             Save recipes, collect ingredients, plan dinners, and send ingredients straight to groceries.
           </p>
         </div>
-        <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+        <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
           {recipeRows.length} saved recipes
         </div>
       </div>
 
-      <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         <form action={addRecipe} className="grid gap-3 lg:grid-cols-[1fr_1fr_0.45fr_0.45fr_0.45fr]">
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Recipe</span>
@@ -129,7 +129,7 @@ export default async function MealsPage() {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
             />
           </label>
-          <button className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+          <button className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
             <Plus className="h-4 w-4" />
             Save
           </button>
@@ -139,7 +139,7 @@ export default async function MealsPage() {
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="space-y-4">
           {recipeRows.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-line bg-white p-8 text-center">
+            <div className="rounded-lg border border-dashed border-line bg-panel p-8 text-center">
               <p className="text-sm font-medium text-ink">No recipes yet</p>
               <p className="mt-1 text-sm text-ink/55">Save a favorite meal above.</p>
             </div>
@@ -176,7 +176,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
   const totalMinutes = (recipe.prep_minutes ?? 0) + (recipe.cook_minutes ?? 0);
 
   return (
-    <article className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <article className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="truncate text-lg font-semibold text-ink">{recipe.title}</h2>
@@ -263,7 +263,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
 
 function MealPlanner({ recipes }: { recipes: Recipe[] }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
         <CalendarPlus className="h-5 w-5 text-sage" />
         <h2 className="text-lg font-semibold text-ink">Plan a meal</h2>
@@ -275,7 +275,7 @@ function MealPlanner({ recipes }: { recipes: Recipe[] }) {
             required
             name="recipe_id"
             defaultValue=""
-            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+            className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
           >
             <option value="">Select</option>
             {recipes.map((recipe) => (
@@ -300,7 +300,7 @@ function MealPlanner({ recipes }: { recipes: Recipe[] }) {
             <select
               name="meal_type"
               defaultValue="dinner"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
             >
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
@@ -317,7 +317,7 @@ function MealPlanner({ recipes }: { recipes: Recipe[] }) {
             className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
           />
         </label>
-        <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+        <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
           <Plus className="h-4 w-4" />
           Plan
         </button>
@@ -328,7 +328,7 @@ function MealPlanner({ recipes }: { recipes: Recipe[] }) {
 
 function PlannedMeals({ items }: { items: MealPlanItem[] }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">Upcoming meals</h2>
         <span className="text-sm text-ink/55">{items.length}</span>

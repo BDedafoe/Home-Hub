@@ -63,9 +63,9 @@ export function MobileBottomNav({ signOutAction }: { signOutAction: () => Promis
   const overflowActive = overflowItems.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(23,32,27,0.08)] backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-panel/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(23,32,27,0.08)] backdrop-blur md:hidden">
       {open ? (
-        <div className="mb-2 rounded-lg border border-line bg-white p-2 shadow-lg">
+        <div className="mb-2 rounded-lg border border-line bg-panel p-2 shadow-lg">
           <div className="mb-1 flex items-center justify-between px-2 py-1">
             <p className="text-xs font-semibold uppercase text-ink/50">More</p>
             <button type="button" onClick={() => setOpen(false)} className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-ink" aria-label="Close more menu">

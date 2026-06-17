@@ -3,13 +3,16 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
   min-height: 100vh;
-  background: #f7f5ef;
-  color: #17201b;
+  background:
+    radial-gradient(circle at top left, rgba(53, 226, 195, 0.12), transparent 32rem),
+    radial-gradient(circle at top right, rgba(255, 111, 97, 0.1), transparent 28rem),
+    #071115;
+  color: #e8f7f3;
 }
 
 button,
@@ -17,4 +20,21 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+input,
+textarea,
+select {
+  background: #0b171d;
+  color: #e8f7f3;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(232, 247, 243, 0.38);
+}
+
+select option {
+  background: #0b171d;
+  color: #e8f7f3;
 }

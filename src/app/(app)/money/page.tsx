@@ -91,7 +91,7 @@ export default async function MoneyPage() {
             Track household income and spending for the current month.
           </p>
         </div>
-        <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+        <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
           {formatMonthLabel(start)}
         </div>
       </div>
@@ -102,14 +102,14 @@ export default async function MoneyPage() {
         <StatCard label="Upcoming bills" value={String(activeBills.length)} detail={`${formatCurrency(billTotal)} scheduled`} />
       </div>
 
-      <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         <form action={addTransaction} className="grid gap-3 lg:grid-cols-[0.6fr_0.7fr_0.9fr_1fr_0.8fr_1fr_auto]">
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Type</span>
             <select
               name="type"
               defaultValue="expense"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
             >
               <option value="expense">Expense</option>
               <option value="income">Income</option>
@@ -133,7 +133,7 @@ export default async function MoneyPage() {
               required
               name="category"
               defaultValue=""
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
             >
               <option value="">Select</option>
               {categories.map((category) => (
@@ -168,7 +168,7 @@ export default async function MoneyPage() {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
             />
           </label>
-          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
             <Plus className="h-4 w-4" />
             Add
           </button>
@@ -176,7 +176,7 @@ export default async function MoneyPage() {
       </section>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm lg:col-span-2">
+        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-blue" />
             <h2 className="text-lg font-semibold text-ink">Recurring bills</h2>
@@ -207,7 +207,7 @@ export default async function MoneyPage() {
               <select
                 name="category"
                 defaultValue=""
-                className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+                className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
               >
                 <option value="">Optional</option>
                 {categories
@@ -235,7 +235,7 @@ export default async function MoneyPage() {
               <input name="autopay" type="checkbox" className="h-4 w-4 rounded border-line text-sage" />
               Autopay
             </label>
-            <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+            <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
               <Plus className="h-4 w-4" />
               Add
             </button>
@@ -256,7 +256,7 @@ export default async function MoneyPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Expense categories</h2>
             <span className="text-sm text-ink/55">{categoryTotals.length}</span>
@@ -285,7 +285,7 @@ export default async function MoneyPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Transactions</h2>
             <span className="text-sm text-ink/55">{rows.length}</span>

@@ -43,12 +43,12 @@ export default async function NotesPage() {
             Capture loose thoughts, plans, gift ideas, house projects, and things to discuss.
           </p>
         </div>
-        <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+        <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
           {pinnedNotes.length} pinned
         </div>
       </div>
 
-      <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         <form action={addNote} className="grid gap-3 lg:grid-cols-[1fr_0.7fr_auto]">
           <label className="block">
             <span className="text-xs font-medium uppercase text-ink/50">Title</span>
@@ -64,7 +64,7 @@ export default async function NotesPage() {
             <select
               name="category"
               defaultValue="General"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
@@ -86,7 +86,7 @@ export default async function NotesPage() {
               className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
             />
           </label>
-          <button className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+          <button className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
             <Plus className="h-4 w-4" />
             Add
           </button>
@@ -103,7 +103,7 @@ export default async function NotesPage() {
 
 function NoteSection({ title, notes, empty }: { title: string; notes: Note[]; empty: string }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <span className="text-sm text-ink/55">{notes.length}</span>

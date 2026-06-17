@@ -74,16 +74,16 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+          <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
             {openTasks.length} open
           </div>
-          <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+          <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
             {dueTodayCount} due today
           </div>
         </div>
       </div>
 
-      <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         {params.calendar === "added" ? (
           <p className="mb-4 rounded-md border border-sage/30 bg-sage/10 px-3 py-2 text-sm text-sage">
             Google Calendar reminder added.
@@ -133,7 +133,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             <select
               name="reminder_minutes"
               defaultValue="30"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
             >
               <option value="0">At time</option>
               <option value="10">10 min</option>
@@ -147,14 +147,14 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             <select
               name="priority"
               defaultValue="normal"
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+              className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
             >
               <option value="low">Low</option>
               <option value="normal">Normal</option>
               <option value="high">High</option>
             </select>
           </label>
-          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+          <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90">
             <Plus className="h-4 w-4" />
             Add
           </button>
@@ -181,7 +181,7 @@ function TaskList({
   doneList?: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <span className="text-sm text-ink/55">{tasks.length}</span>
@@ -202,7 +202,7 @@ function TaskList({
                 <input type="hidden" name="id" value={task.id} />
                 <input type="hidden" name="status" value={task.status === "done" ? "open" : "done"} />
                 <button
-                  className="h-4 w-4 shrink-0 rounded border border-line bg-white ring-offset-2 hover:border-sage focus:outline-none focus:ring-2 focus:ring-sage"
+                  className="h-4 w-4 shrink-0 rounded border border-line bg-panel ring-offset-2 hover:border-sage focus:outline-none focus:ring-2 focus:ring-sage"
                   aria-label={task.status === "done" ? `Reopen ${task.title}` : `Complete ${task.title}`}
                 >
                   {task.status === "done" ? <span className="block h-full w-full rounded-sm bg-sage" /> : null}
@@ -242,7 +242,7 @@ function TaskList({
                         <select
                           name="reminder_minutes"
                           defaultValue={String(task.reminder_minutes ?? 30)}
-                          className="h-9 rounded-md border border-line bg-white px-2 text-xs outline-none focus:border-sage"
+                          className="h-9 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
                           aria-label={`Reminder timing for ${task.title}`}
                         >
                           <option value="0">At time</option>

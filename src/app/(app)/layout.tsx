@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-paper">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-white px-4 py-5 md:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-panel px-4 py-5 md:block">
         <div className="px-2">
           <p className="text-sm font-medium text-sage">Home Hub</p>
           <h1 className="mt-1 text-xl font-semibold text-ink">{household.name}</h1>
@@ -36,7 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2">
             <QuickAdd />
             <form action={signOut}>
-              <button className="hidden rounded-md border border-line bg-white px-3 py-2 text-sm font-medium text-ink hover:border-ink/40 sm:inline-flex">
+              <button className="hidden rounded-md border border-line bg-panel px-3 py-2 text-sm font-medium text-ink hover:border-ink/40 sm:inline-flex">
                 Sign out
               </button>
             </form>

@@ -44,7 +44,7 @@ export function QuickAdd() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90"
+        className="inline-flex items-center gap-2 rounded-md bg-sage px-3 py-2 text-sm font-semibold text-paper hover:bg-sage/90"
       >
         <Plus className="h-4 w-4" />
         <span className="hidden sm:inline">Quick add</span>
@@ -52,7 +52,7 @@ export function QuickAdd() {
       </button>
 
       {open ? (
-        <div className="fixed inset-x-3 top-20 z-30 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-lg border border-line bg-white p-4 shadow-lg sm:absolute sm:inset-auto sm:right-0 sm:top-12 sm:w-[min(92vw,560px)]">
+        <div className="fixed inset-x-3 top-20 z-30 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-lg border border-line bg-panel p-4 shadow-lg sm:absolute sm:inset-auto sm:right-0 sm:top-12 sm:w-[min(92vw,560px)]">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="grid flex-1 grid-cols-4 gap-1 rounded-md bg-paper p-1">
               {modes.map((item) => (
@@ -62,7 +62,7 @@ export function QuickAdd() {
                   onClick={() => setMode(item.id)}
                   className={
                     mode === item.id
-                      ? "inline-flex items-center justify-center gap-2 rounded px-3 py-2 text-sm font-semibold text-ink shadow-sm bg-white"
+                      ? "inline-flex items-center justify-center gap-2 rounded px-3 py-2 text-sm font-semibold text-ink shadow-sm bg-panel"
                       : "inline-flex items-center justify-center gap-2 rounded px-3 py-2 text-sm font-medium text-ink/60 hover:text-ink"
                   }
                 >
@@ -90,7 +90,7 @@ export function QuickAdd() {
             {error ? <p className="rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p> : null}
             <button
               disabled={isPending}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
               {isPending ? "Adding..." : `Add ${modes.find((item) => item.id === mode)?.label}`}
@@ -230,7 +230,7 @@ function SelectInput({
         required={required}
         name={name}
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+        className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
       >
         {defaultValue === "" ? <option value="">Select</option> : null}
         {options.map((option) => (

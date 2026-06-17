@@ -78,8 +78,8 @@ export default async function HomePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">{assetRows.length} assets</div>
-          <div className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/70">
+          <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">{assetRows.length} assets</div>
+          <div className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink/70">
             {openMaintenance.length} reminders
           </div>
         </div>
@@ -87,7 +87,7 @@ export default async function HomePage() {
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
         <section className="space-y-4">
-          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-ink">Add home asset</h2>
             <form action={addHomeAsset} className="grid gap-3 sm:grid-cols-2">
               <TextField required name="name" label="Name" placeholder="Water heater" />
@@ -96,7 +96,7 @@ export default async function HomePage() {
               <DateField name="purchase_date" label="Purchase date" />
               <DateField name="warranty_expires" label="Warranty expires" />
               <TextField name="notes" label="Notes" placeholder="Filter size, model number, contractor" />
-              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90 sm:col-span-2">
+              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 sm:col-span-2">
                 <Plus className="h-4 w-4" />
                 Add asset
               </button>
@@ -107,14 +107,14 @@ export default async function HomePage() {
         </section>
 
         <section className="space-y-4">
-          <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-ink">Add maintenance reminder</h2>
             <form action={addMaintenanceItem} className="grid gap-3 sm:grid-cols-2">
               <TextField required name="title" label="Reminder" placeholder="Change HVAC filter" />
               <DateField name="due_date" label="Due date" />
               <SelectField name="repeat_rule" label="Repeat" options={repeatOptions} />
               <TextField name="notes" label="Notes" placeholder="20x25x1 filter" />
-              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90 sm:col-span-2">
+              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sage px-4 text-sm font-semibold text-paper hover:bg-sage/90 sm:col-span-2">
                 <Plus className="h-4 w-4" />
                 Add reminder
               </button>
@@ -173,7 +173,7 @@ function SelectField({ name, label, options }: { name: string; label: string; op
       <select
         name={name}
         defaultValue=""
-        className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-sage"
+        className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
       >
         <option value="">Select</option>
         {options.map((option) => (
@@ -188,7 +188,7 @@ function SelectField({ name, label, options }: { name: string; label: string; op
 
 function AssetList({ assets }: { assets: HomeAsset[] }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">Home assets</h2>
         <span className="text-sm text-ink/55">{assets.length}</span>
@@ -234,7 +234,7 @@ function MaintenanceList({
   doneList?: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <span className="text-sm text-ink/55">{items.length}</span>
@@ -251,7 +251,7 @@ function MaintenanceList({
                 <input type="hidden" name="id" value={item.id} />
                 <input type="hidden" name="status" value={item.status === "done" ? "open" : "done"} />
                 <button
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border border-line bg-white ring-offset-2 hover:border-sage focus:outline-none focus:ring-2 focus:ring-sage"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border border-line bg-panel ring-offset-2 hover:border-sage focus:outline-none focus:ring-2 focus:ring-sage"
                   aria-label={item.status === "done" ? `Reopen ${item.title}` : `Complete ${item.title}`}
                 >
                   {item.status === "done" ? <span className="block h-full w-full rounded-sm bg-sage" /> : null}
