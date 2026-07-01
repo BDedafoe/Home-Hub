@@ -60,6 +60,26 @@ type DashboardBill = {
   active: boolean;
 };
 
+type Property = {
+  id: string;
+  address: string;
+};
+
+type PropertyFinancials = {
+  property_id: string;
+  mortgage: number;
+  insurance: number;
+  taxes: number;
+  hoa: number;
+  utilities: number;
+  maintenance: number;
+  cleaning: number;
+  other_expenses: number;
+  rent: number;
+  late_fees: number;
+  other_income: number;
+};
+
 export default async function DashboardPage() {
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
@@ -76,7 +96,8 @@ export default async function DashboardPage() {
     { data: meals, error: mealsError },
     { data: maintenance, error: maintenanceError },
     { data: notes, error: notesError },
-    { data: bills, error: billsError }
+    { data: bills, error: billsError },
+    { data: properties, error: propertiesError }
   ] = await Promise.all([
     supabase
       .from("tasks")
@@ -137,7 +158,8 @@ export default async function DashboardPage() {
       .select("id, name, amount, due_day, active")
       .eq("household_id", household.id)
       .eq("active", true)
-      .returns<DashboardBill[]>()
+      .returns<DashboardBill[]>(),
+    supabase.from("properties").select("id, address").eq("household_id", household.id).returns<Property[]>()
   ]);
 
   if (tasksError) {
@@ -172,10 +194,31 @@ export default async function DashboardPage() {
     throw new Error(billsError.message);
   }
 
+  if (propertiesError) {
+    throw new Error(propertiesError.message);
+  }
+
+  const propertyRows = properties ?? [];
+  const propertyIds = propertyRows.map((property) => property.id);
+  const { data: propertyFinancials, error: propertyFinancialsError } =
+    propertyIds.length > 0
+      ? await supabase
+          .from("property_financials")
+          .select("property_id, mortgage, insurance, taxes, hoa, utilities, maintenance, cleaning, other_expenses, rent, late_fees, other_income")
+          .in("property_id", propertyIds)
+          .returns<PropertyFinancials[]>()
+      : { data: [] as PropertyFinancials[], error: null };
+
+  if (propertyFinancialsError) {
+    throw new Error(propertyFinancialsError.message);
+  }
+
+  const propertyMonthTransactions = getPropertyTransactions(propertyRows, propertyFinancials ?? [], start.slice(0, 7));
+  const propertyYearTransactions = getPropertyYearTransactions(propertyRows, propertyFinancials ?? [], year);
   const openTasks = tasks ?? [];
   const groceries = groceryItems ?? [];
-  const monthlyTransactions = transactions ?? [];
-  const annualTransactions = yearTransactions ?? [];
+  const monthlyTransactions = [...propertyMonthTransactions, ...(transactions ?? [])];
+  const annualTransactions = [...propertyYearTransactions, ...(yearTransactions ?? [])];
   const plannedMeals = meals ?? [];
   const maintenanceItems = maintenance ?? [];
   const pinnedNotes = notes ?? [];
@@ -418,6 +461,55 @@ function getMonthSummaries(transactions: DashboardYearTransaction[], year: numbe
   });
 
   return summaries;
+}
+
+function getPropertyYearTransactions(properties: Property[], financialsRows: PropertyFinancials[], year: number): DashboardYearTransaction[] {
+  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
+    getPropertyTransactions(properties, financialsRows, month)
+  );
+}
+
+function getPropertyTransactions(properties: Property[], financialsRows: PropertyFinancials[], month: string): DashboardYearTransaction[] {
+  const propertyById = new Map(properties.map((property) => [property.id, property]));
+
+  return financialsRows.flatMap((financials) => {
+    const property = propertyById.get(financials.property_id);
+
+    if (!property) {
+      return [];
+    }
+
+    const entries = [
+      propertyTransaction(month, "income", financials.rent, "Rental Income"),
+      propertyTransaction(month, "income", financials.late_fees, "Late Fees"),
+      propertyTransaction(month, "income", financials.other_income, "Property Income"),
+      propertyTransaction(month, "expense", financials.mortgage, "Mortgage/Rent"),
+      propertyTransaction(month, "expense", financials.insurance, "Property Insurance"),
+      propertyTransaction(month, "expense", financials.taxes, "Property Taxes"),
+      propertyTransaction(month, "expense", financials.hoa, "HOA"),
+      propertyTransaction(month, "expense", financials.utilities, "Utilities"),
+      propertyTransaction(month, "expense", financials.maintenance, "Maintenance"),
+      propertyTransaction(month, "expense", financials.cleaning, "Cleaning"),
+      propertyTransaction(month, "expense", financials.other_expenses, "Miscellaneous")
+    ];
+
+    return entries.filter((entry): entry is DashboardYearTransaction => Boolean(entry));
+  });
+}
+
+function propertyTransaction(month: string, type: "income" | "expense", amount: number, category: string): DashboardYearTransaction | null {
+  const numericAmount = Number(amount);
+
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return null;
+  }
+
+  return {
+    type,
+    amount: numericAmount,
+    category,
+    transaction_date: `${month}-01`
+  };
 }
 
 function getChartHeight(value: number, summaries: MonthSummary[]) {
