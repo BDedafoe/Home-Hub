@@ -11,7 +11,7 @@ const navItems = [
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/meals", label: "Meals", icon: Utensils },
   { href: "/groceries", label: "Groceries", icon: ShoppingCart },
-  { href: "/home", label: "Home", icon: Home },
+  { href: "/home", label: "Houses", icon: Home },
   { href: "/notes", label: "Notes", icon: NotebookText },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
@@ -25,7 +25,7 @@ const mobileItems = [
 
 const overflowItems = [
   { href: "/meals", label: "Meals", icon: Utensils },
-  { href: "/home", label: "Home records", icon: Home },
+  { href: "/home", label: "Houses", icon: Home },
   { href: "/notes", label: "Notes", icon: NotebookText },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
