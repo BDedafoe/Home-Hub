@@ -13,7 +13,7 @@ type Transaction = {
   note: string | null;
   transaction_date: string;
   created_at: string;
-  synced_from?: "houses";
+  synced_from?: "houses" | "recurring";
 };
 
 type RecurringBill = {
@@ -151,17 +151,18 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
   }
 
   const year = Number(selectedMonth.slice(0, 4));
-  const propertyMonthRows = getPropertyTransactions(propertyRows, propertyFinancials ?? [], selectedMonth);
-  const propertyYearRows = getPropertyYearTransactions(propertyRows, propertyFinancials ?? [], year);
-  const rows = [...propertyMonthRows, ...(transactions ?? [])].sort(compareTransactionsByDate);
-  const yearRows = [...propertyYearRows, ...(yearTransactions ?? [])];
   const bills = (recurringBills ?? []).sort(compareBillsByNextDueDate);
   const activeBills = bills.filter((bill) => bill.active);
+  const propertyMonthRows = getPropertyTransactions(propertyRows, propertyFinancials ?? [], selectedMonth);
+  const propertyYearRows = getPropertyYearTransactions(propertyRows, propertyFinancials ?? [], year);
+  const recurringMonthRows = getRecurringTransactions(activeBills, selectedMonth);
+  const recurringYearRows = getRecurringYearTransactions(activeBills, year);
+  const rows = [...propertyMonthRows, ...recurringMonthRows, ...(transactions ?? [])].sort(compareTransactionsByDate);
+  const yearRows = [...propertyYearRows, ...recurringYearRows, ...(yearTransactions ?? [])];
   const income = rows.filter((row) => row.type === "income").reduce((sum, row) => sum + Number(row.amount), 0);
   const expenses = rows.filter((row) => row.type === "expense").reduce((sum, row) => sum + Number(row.amount), 0);
   const net = income - expenses;
   const categoryTotals = getExpenseCategoryTotals(rows);
-  const billTotal = activeBills.reduce((sum, bill) => sum + Number(bill.amount ?? 0), 0);
   const monthSummaries = getMonthSummaries(yearRows, year);
   const yearIncome = monthSummaries.reduce((sum, month) => sum + month.income, 0);
   const yearExpenses = monthSummaries.reduce((sum, month) => sum + month.expenses, 0);
@@ -175,7 +176,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           <p className="text-sm font-medium text-sage">{household.name}</p>
           <h1 className="mt-1 text-2xl font-semibold text-ink">Money</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink/65">
-            Track household income and spending by month. Houses income and expenses are included automatically.
+            Track household income and spending by month. Houses and recurring expenses are included automatically.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -216,6 +217,12 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
       {propertyMonthRows.length > 0 ? (
         <div className="mb-5 rounded-lg border border-income/25 bg-income/10 px-4 py-3 text-sm text-ink/75">
           <span className="font-semibold text-income">{propertyMonthRows.length} Houses entries</span> are synced into this month from property income and expenses.
+        </div>
+      ) : null}
+
+      {recurringMonthRows.length > 0 ? (
+        <div className="mb-5 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-ink/75">
+          <span className="font-semibold text-primary">{recurringMonthRows.length} recurring expenses</span> are synced into this month automatically.
         </div>
       ) : null}
 
@@ -334,11 +341,11 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
         <section className="rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-blue" />
-            <h2 className="text-lg font-semibold text-ink">Recurring bills</h2>
+              <h2 className="text-lg font-semibold text-ink">Recurring expenses</h2>
           </div>
           <form action={addRecurringBill} className="grid gap-3 lg:grid-cols-[1fr_0.7fr_0.8fr_0.55fr_auto_auto]">
             <label className="block">
-              <span className="text-xs font-medium uppercase text-ink/50">Bill</span>
+              <span className="text-xs font-medium uppercase text-ink/50">Expense</span>
               <input
                 required
                 name="name"
@@ -399,7 +406,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           <div className="mt-4">
             {bills.length === 0 ? (
               <p className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink/60">
-                Add recurring bills to track what is coming due.
+                Add recurring expenses to automatically include them in every month.
               </p>
             ) : (
               <div className="grid gap-2 md:grid-cols-2">
@@ -482,8 +489,16 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
           {isIncome ? "+" : "-"}
           {formatCurrency(Number(transaction.amount))}
         </span>
-        {transaction.synced_from === "houses" ? (
-          <span className="rounded-full border border-income/30 bg-income/10 px-2 py-1 text-xs font-semibold text-income">Houses</span>
+        {transaction.synced_from ? (
+          <span
+            className={
+              transaction.synced_from === "houses"
+                ? "rounded-full border border-income/30 bg-income/10 px-2 py-1 text-xs font-semibold text-income"
+                : "rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
+            }
+          >
+            {transaction.synced_from === "houses" ? "Houses" : "Recurring"}
+          </span>
         ) : (
           <form action={deleteTransaction}>
             <input type="hidden" name="id" value={transaction.id} />
@@ -538,6 +553,38 @@ function RecurringBillRow({ bill }: { bill: RecurringBill }) {
       </div>
     </div>
   );
+}
+
+function getRecurringYearTransactions(bills: RecurringBill[], year: number): Transaction[] {
+  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
+    getRecurringTransactions(bills, month)
+  );
+}
+
+function getRecurringTransactions(bills: RecurringBill[], month: string): Transaction[] {
+  return bills
+    .map((bill) => recurringTransaction(bill, month))
+    .filter((entry): entry is Transaction => Boolean(entry));
+}
+
+function recurringTransaction(bill: RecurringBill, month: string): Transaction | null {
+  const amount = Number(bill.amount ?? 0);
+
+  if (!bill.active || !Number.isFinite(amount) || amount <= 0) {
+    return null;
+  }
+
+  return {
+    id: `recurring:${bill.id}:${month}`,
+    type: "expense",
+    amount,
+    category: bill.category || "Miscellaneous",
+    merchant: bill.name,
+    note: bill.autopay ? "Recurring expense · Autopay" : "Recurring expense",
+    transaction_date: getRecurringTransactionDate(month, bill.due_day),
+    created_at: `${month}-01T00:00:00.000Z`,
+    synced_from: "recurring" as const
+  };
 }
 
 function getPropertyYearTransactions(properties: Property[], financialsRows: PropertyFinancials[], year: number): Transaction[] {
@@ -711,6 +758,13 @@ function getNextBillDueDate(dueDay: number) {
 
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampBillDay(nextMonth.getFullYear(), nextMonth.getMonth(), dueDay));
+}
+
+function getRecurringTransactionDate(month: string, dueDay: number | null) {
+  const [year, monthValue] = month.split("-").map(Number);
+  const day = dueDay ? clampBillDay(year, monthValue - 1, dueDay) : 1;
+
+  return [year, String(monthValue).padStart(2, "0"), String(day).padStart(2, "0")].join("-");
 }
 
 function compareBillsByNextDueDate(a: RecurringBill, b: RecurringBill) {

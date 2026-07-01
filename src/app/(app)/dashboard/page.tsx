@@ -56,6 +56,7 @@ type DashboardBill = {
   id: string;
   name: string;
   amount: number | null;
+  category: string | null;
   due_day: number | null;
   active: boolean;
 };
@@ -155,7 +156,7 @@ export default async function DashboardPage() {
       .returns<DashboardNote[]>(),
     supabase
       .from("recurring_bills")
-      .select("id, name, amount, due_day, active")
+      .select("id, name, amount, category, due_day, active")
       .eq("household_id", household.id)
       .eq("active", true)
       .returns<DashboardBill[]>(),
@@ -217,12 +218,14 @@ export default async function DashboardPage() {
   const propertyYearTransactions = getPropertyYearTransactions(propertyRows, propertyFinancials ?? [], year);
   const openTasks = tasks ?? [];
   const groceries = groceryItems ?? [];
-  const monthlyTransactions = [...propertyMonthTransactions, ...(transactions ?? [])];
-  const annualTransactions = [...propertyYearTransactions, ...(yearTransactions ?? [])];
   const plannedMeals = meals ?? [];
   const maintenanceItems = maintenance ?? [];
   const pinnedNotes = notes ?? [];
   const activeBills = (bills ?? []).filter((bill) => bill.due_day).sort(compareBillsByNextDueDate);
+  const recurringMonthTransactions = getRecurringTransactions(activeBills, start.slice(0, 7));
+  const recurringYearTransactions = getRecurringYearTransactions(activeBills, year);
+  const monthlyTransactions = [...propertyMonthTransactions, ...recurringMonthTransactions, ...(transactions ?? [])];
+  const annualTransactions = [...propertyYearTransactions, ...recurringYearTransactions, ...(yearTransactions ?? [])];
   const nextBill = activeBills[0];
   const monthlyIncome = monthlyTransactions
     .filter((transaction) => transaction.type === "income")
@@ -251,9 +254,9 @@ export default async function DashboardPage() {
         <StatCard label="Open tasks" value={String(openTasks.length)} detail={`${dueTodayCount} due today`} />
         <StatCard label="Grocery items" value={String(groceries.length)} detail="Still needed" />
         <StatCard
-          label="Upcoming bills"
+          label="Upcoming expenses"
           value={String(activeBills.length)}
-          detail={nextBill ? `${nextBill.name} due ${formatDate(toIsoDate(getNextBillDueDate(nextBill.due_day ?? 1)))}` : "No active bills"}
+          detail={nextBill ? `${nextBill.name} due ${formatDate(toIsoDate(getNextBillDueDate(nextBill.due_day ?? 1)))}` : "No active expenses"}
         />
       </div>
 
@@ -463,6 +466,33 @@ function getMonthSummaries(transactions: DashboardYearTransaction[], year: numbe
   return summaries;
 }
 
+function getRecurringYearTransactions(bills: DashboardBill[], year: number): DashboardYearTransaction[] {
+  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
+    getRecurringTransactions(bills, month)
+  );
+}
+
+function getRecurringTransactions(bills: DashboardBill[], month: string): DashboardYearTransaction[] {
+  return bills
+    .map((bill) => recurringTransaction(bill, month))
+    .filter((entry): entry is DashboardYearTransaction => Boolean(entry));
+}
+
+function recurringTransaction(bill: DashboardBill, month: string): DashboardYearTransaction | null {
+  const amount = Number(bill.amount ?? 0);
+
+  if (!bill.active || !Number.isFinite(amount) || amount <= 0) {
+    return null;
+  }
+
+  return {
+    type: "expense",
+    amount,
+    category: bill.category || "Recurring expenses",
+    transaction_date: getRecurringTransactionDate(month, bill.due_day)
+  };
+}
+
 function getPropertyYearTransactions(properties: Property[], financialsRows: PropertyFinancials[], year: number): DashboardYearTransaction[] {
   return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
     getPropertyTransactions(properties, financialsRows, month)
@@ -556,6 +586,13 @@ function getNextBillDueDate(dueDay: number) {
 
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampBillDay(nextMonth.getFullYear(), nextMonth.getMonth(), dueDay));
+}
+
+function getRecurringTransactionDate(month: string, dueDay: number | null) {
+  const [year, monthValue] = month.split("-").map(Number);
+  const day = dueDay ? clampBillDay(year, monthValue - 1, dueDay) : 1;
+
+  return [year, String(monthValue).padStart(2, "0"), String(day).padStart(2, "0")].join("-");
 }
 
 function compareBillsByNextDueDate(a: DashboardBill, b: DashboardBill) {
