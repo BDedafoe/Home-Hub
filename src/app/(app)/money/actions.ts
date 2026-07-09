@@ -59,6 +59,33 @@ export async function deleteTransaction(formData: FormData) {
   redirect(`/money?month=${month}`);
 }
 
+export async function updateTransactionCategory(formData: FormData) {
+  const { supabase } = await getCurrentUser();
+  const id = String(formData.get("id") ?? "");
+  const category = String(formData.get("category") ?? "").trim();
+  const month = getReturnMonth(formData);
+
+  if (!id || !category) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      category,
+      category_source: "manual"
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/money");
+  revalidatePath("/dashboard");
+  redirect(`/money?month=${month}`);
+}
+
 export async function addRecurringBill(formData: FormData) {
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);

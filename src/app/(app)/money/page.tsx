@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowDownCircle, ArrowLeft, ArrowRight, ArrowUpCircle, CalendarDays, Plus, Trash2 } from "lucide-react";
+import { PlaidLinkButton } from "@/components/plaid-link-button";
 import { StatCard } from "@/components/stat-card";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
-import { addRecurringBill, addTransaction, deleteRecurringBill, deleteTransaction, toggleRecurringBill } from "./actions";
+import { addRecurringBill, addTransaction, deleteRecurringBill, deleteTransaction, toggleRecurringBill, updateTransactionCategory } from "./actions";
 
 type Transaction = {
   id: string;
@@ -13,6 +14,8 @@ type Transaction = {
   note: string | null;
   transaction_date: string;
   created_at: string;
+  source?: "manual" | "plaid";
+  category_source?: "manual" | "plaid" | "homehub";
   synced_from?: "houses" | "recurring";
 };
 
@@ -53,6 +56,16 @@ type PropertyFinancials = {
   other_income: number;
 };
 
+type PlaidAccount = {
+  id: string;
+  name: string;
+  mask: string | null;
+  subtype: string | null;
+  plaid_items: {
+    institution_name: string | null;
+  } | null;
+};
+
 const categories = [
   "Groceries",
   "Dining out",
@@ -90,11 +103,12 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
     { data: transactions, error },
     { data: yearTransactions, error: yearTransactionsError },
     { data: recurringBills, error: billsError },
-    { data: properties, error: propertiesError }
+    { data: properties, error: propertiesError },
+    { data: plaidAccounts, error: plaidAccountsError }
   ] = await Promise.all([
     supabase
       .from("transactions")
-      .select("id, type, amount, category, merchant, note, transaction_date, created_at")
+      .select("id, type, amount, category, merchant, note, transaction_date, created_at, source, category_source")
       .eq("household_id", household.id)
       .gte("transaction_date", start)
       .lte("transaction_date", end)
@@ -103,7 +117,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
       .returns<Transaction[]>(),
     supabase
       .from("transactions")
-      .select("id, type, amount, category, merchant, note, transaction_date, created_at")
+      .select("id, type, amount, category, merchant, note, transaction_date, created_at, source, category_source")
       .eq("household_id", household.id)
       .gte("transaction_date", yearStart)
       .lte("transaction_date", yearEnd)
@@ -116,7 +130,11 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
       .order("active", { ascending: false })
       .order("due_day", { ascending: true, nullsFirst: false })
       .returns<RecurringBill[]>(),
-    supabase.from("properties").select("id, address").eq("household_id", household.id).returns<Property[]>()
+    supabase.from("properties").select("id, address").eq("household_id", household.id).returns<Property[]>(),
+    supabase
+      .from("plaid_accounts")
+      .select("id, name, mask, subtype, plaid_items(institution_name)")
+      .returns<PlaidAccount[]>()
   ]);
 
   if (error) {
@@ -133,6 +151,10 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
 
   if (propertiesError) {
     throw new Error(propertiesError.message);
+  }
+
+  if (plaidAccountsError) {
+    throw new Error(plaidAccountsError.message);
   }
 
   const propertyRows = properties ?? [];
@@ -168,6 +190,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
   const yearExpenses = monthSummaries.reduce((sum, month) => sum + month.expenses, 0);
   const previousMonth = shiftMonth(selectedMonth, -1);
   const nextMonth = shiftMonth(selectedMonth, 1);
+  const connectedAccounts = plaidAccounts ?? [];
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -207,6 +230,26 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           </Link>
         </div>
       </div>
+
+      <section className="mb-5 flex flex-col justify-between gap-4 rounded-lg border border-line bg-panel p-4 shadow-sm lg:flex-row lg:items-center">
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Card sync</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Connect a credit card securely with Plaid. Imported transactions can still be manually recategorized.
+          </p>
+          {connectedAccounts.length > 0 ? (
+            <p className="mt-2 text-xs text-ink/50">
+              Connected:{" "}
+              {connectedAccounts
+                .map((account) =>
+                  [account.plaid_items?.institution_name, account.name, account.mask ? `••${account.mask}` : null].filter(Boolean).join(" ")
+                )
+                .join(", ")}
+            </p>
+          ) : null}
+        </div>
+        <PlaidLinkButton />
+      </section>
 
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         <StatCard label="Income" value={formatCurrency(income)} detail={`${rows.filter((row) => row.type === "income").length} entries`} />
@@ -472,9 +515,10 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
 
 function TransactionRow({ transaction, month }: { transaction: Transaction; month: string }) {
   const isIncome = transaction.type === "income";
+  const generated = Boolean(transaction.synced_from);
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2">
+    <div className="flex flex-col gap-3 rounded-md border border-line px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
         {isIncome ? <ArrowUpCircle className="h-5 w-5 shrink-0 text-income" /> : <ArrowDownCircle className="h-5 w-5 shrink-0 text-coral" />}
         <div className="min-w-0">
@@ -484,7 +528,27 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
           </p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {!generated ? (
+          <form action={updateTransactionCategory} className="flex items-center gap-1">
+            <input type="hidden" name="id" value={transaction.id} />
+            <input type="hidden" name="month" value={month} />
+            <select
+              name="category"
+              defaultValue={transaction.category}
+              className="h-9 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
+            >
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            <button className="h-9 rounded-md border border-line px-2 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink">
+              Save
+            </button>
+          </form>
+        ) : null}
         <span className={isIncome ? "text-sm font-semibold text-income" : "text-sm font-semibold text-ink"}>
           {isIncome ? "+" : "-"}
           {formatCurrency(Number(transaction.amount))}
@@ -499,6 +563,8 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
           >
             {transaction.synced_from === "houses" ? "Houses" : "Recurring"}
           </span>
+        ) : transaction.source === "plaid" ? (
+          <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
         ) : (
           <form action={deleteTransaction}>
             <input type="hidden" name="id" value={transaction.id} />
