@@ -469,64 +469,70 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
   const generated = Boolean(transaction.synced_from);
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-line px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 items-center gap-3">
-        {isIncome ? <ArrowUpCircle className="h-5 w-5 shrink-0 text-income" /> : <ArrowDownCircle className="h-5 w-5 shrink-0 text-coral" />}
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-ink">{transaction.merchant || transaction.category}</p>
-          <p className="truncate text-xs text-ink/50">
-            {[transaction.category, formatDate(transaction.transaction_date), transaction.note].filter(Boolean).join(" · ")}
-          </p>
+    <div className="rounded-md border border-line px-3 py-2">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          {isIncome ? <ArrowUpCircle className="mt-0.5 h-5 w-5 shrink-0 text-income" /> : <ArrowDownCircle className="mt-0.5 h-5 w-5 shrink-0 text-coral" />}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-ink">{transaction.merchant || transaction.category}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-ink/50 sm:truncate">
+              {[transaction.category, formatDate(transaction.transaction_date), transaction.note].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={isIncome ? "whitespace-nowrap text-sm font-semibold text-income" : "whitespace-nowrap text-sm font-semibold text-ink"}>
+            {isIncome ? "+" : "-"}
+            {formatCurrency(Number(transaction.amount))}
+          </span>
+          {transaction.synced_from ? (
+            <span className="hidden rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary sm:inline-flex">
+              Recurring
+            </span>
+          ) : transaction.source === "plaid" ? (
+            <span className="hidden rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue sm:inline-flex">Plaid</span>
+          ) : (
+            <form action={deleteTransaction}>
+              <input type="hidden" name="id" value={transaction.id} />
+              <input type="hidden" name="month" value={month} />
+              <button
+                className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-coral"
+                aria-label={`Delete ${transaction.merchant || transaction.category}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </form>
+          )}
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        {!generated ? (
-          <form action={updateTransactionCategory} className="flex items-center gap-1">
-            <input type="hidden" name="id" value={transaction.id} />
-            <input type="hidden" name="month" value={month} />
-            <select
-              name="category"
-              defaultValue={transaction.category}
-              className="h-9 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
-            >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-            <button className="h-9 rounded-md border border-line px-2 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink">
-              Save
-            </button>
-          </form>
-        ) : null}
-        <span className={isIncome ? "text-sm font-semibold text-income" : "text-sm font-semibold text-ink"}>
-          {isIncome ? "+" : "-"}
-          {formatCurrency(Number(transaction.amount))}
-        </span>
-        {transaction.synced_from ? (
-          <span
-            className={
-              "rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
-            }
+      {!generated ? (
+        <form action={updateTransactionCategory} className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <input type="hidden" name="id" value={transaction.id} />
+          <input type="hidden" name="month" value={month} />
+          <select
+            name="category"
+            defaultValue={transaction.category}
+            className="h-9 min-w-0 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
           >
-            Recurring
-          </span>
-        ) : transaction.source === "plaid" ? (
-          <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
-        ) : (
-          <form action={deleteTransaction}>
-            <input type="hidden" name="id" value={transaction.id} />
-            <input type="hidden" name="month" value={month} />
-            <button
-              className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-coral"
-              aria-label={`Delete ${transaction.merchant || transaction.category}`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </form>
-        )}
-      </div>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+          <button className="h-9 rounded-md border border-line px-3 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink">
+            Save category
+          </button>
+        </form>
+      ) : (
+        <div className="mt-3 flex sm:hidden">
+          {transaction.synced_from ? (
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">Recurring</span>
+          ) : transaction.source === "plaid" ? (
+            <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
