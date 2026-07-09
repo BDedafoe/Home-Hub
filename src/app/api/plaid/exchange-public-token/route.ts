@@ -24,42 +24,46 @@ type PlaidItemRow = {
 };
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as ExchangeRequest;
-  const publicToken = body.public_token;
+  try {
+    const body = (await request.json()) as ExchangeRequest;
+    const publicToken = body.public_token;
 
-  if (!publicToken) {
-    return NextResponse.json({ error: "Missing public token." }, { status: 400 });
+    if (!publicToken) {
+      return NextResponse.json({ error: "Missing public token." }, { status: 400 });
+    }
+
+    const { user } = await getCurrentUser();
+    const household = await getOrCreateHousehold(user);
+    const exchange = await plaidRequest<ExchangeResponse>("/item/public_token/exchange", {
+      public_token: publicToken
+    });
+
+    const supabase = createAdminClient();
+    const { data: item, error } = await supabase
+      .from("plaid_items")
+      .upsert(
+        {
+          household_id: household.id,
+          user_id: user.id,
+          item_id: exchange.item_id,
+          access_token: exchange.access_token,
+          institution_name: body.institution_name ?? null,
+          status: "active",
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: "item_id" }
+      )
+      .select("id, household_id, user_id, access_token, transactions_cursor")
+      .single<PlaidItemRow>();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const syncResult = await syncPlaidItem(item);
+
+    return NextResponse.json({ ok: true, sync: syncResult });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not connect Plaid account." }, { status: 500 });
   }
-
-  const { user } = await getCurrentUser();
-  const household = await getOrCreateHousehold(user);
-  const exchange = await plaidRequest<ExchangeResponse>("/item/public_token/exchange", {
-    public_token: publicToken
-  });
-
-  const supabase = createAdminClient();
-  const { data: item, error } = await supabase
-    .from("plaid_items")
-    .upsert(
-      {
-        household_id: household.id,
-        user_id: user.id,
-        item_id: exchange.item_id,
-        access_token: exchange.access_token,
-        institution_name: body.institution_name ?? null,
-        status: "active",
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "item_id" }
-    )
-    .select("id, household_id, user_id, access_token, transactions_cursor")
-    .single<PlaidItemRow>();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const syncResult = await syncPlaidItem(item);
-
-  return NextResponse.json({ ok: true, sync: syncResult });
 }

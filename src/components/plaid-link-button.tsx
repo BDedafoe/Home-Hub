@@ -34,10 +34,14 @@ export function PlaidLinkButton() {
     try {
       await loadPlaidScript();
       const tokenResponse = await fetch("/api/plaid/create-link-token", { method: "POST" });
-      const tokenPayload = await tokenResponse.json();
+      const tokenPayload = await readJsonResponse<{ link_token?: string; error?: string }>(tokenResponse);
 
       if (!tokenResponse.ok) {
         throw new Error(tokenPayload?.error ?? "Could not start Plaid Link.");
+      }
+
+      if (!tokenPayload?.link_token) {
+        throw new Error("Plaid did not return a link token.");
       }
 
       const plaid = window.Plaid?.create({
@@ -55,7 +59,7 @@ export function PlaidLinkButton() {
                 institution_name: metadata.institution?.name ?? null
               })
             });
-            const exchangePayload = await exchangeResponse.json();
+            const exchangePayload = await readJsonResponse<{ error?: string }>(exchangeResponse);
 
             if (!exchangeResponse.ok) {
               throw new Error(exchangePayload?.error ?? "Could not connect account.");
@@ -117,4 +121,18 @@ function loadPlaidScript() {
     script.onerror = () => reject(new Error("Could not load Plaid Link."));
     document.body.appendChild(script);
   });
+}
+
+async function readJsonResponse<T>(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return { error: text.slice(0, 180) } as T;
+  }
 }
