@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowLeft, ArrowRight, ArrowUpCircle, CalendarDays, Plus, Trash2 } from "lucide-react";
+import { ArrowDownCircle, ArrowLeft, ArrowRight, ArrowUpCircle, Plus, Trash2 } from "lucide-react";
 import { PlaidLinkButton } from "@/components/plaid-link-button";
 import { StatCard } from "@/components/stat-card";
 import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
-import { addRecurringBill, addTransaction, deleteRecurringBill, deleteTransaction, toggleRecurringBill, updateTransactionCategory } from "./actions";
+import { addTransaction, deleteTransaction, updateTransactionCategory } from "./actions";
 
 type Transaction = {
   id: string;
@@ -16,18 +16,6 @@ type Transaction = {
   created_at: string;
   source?: "manual" | "plaid";
   category_source?: "manual" | "plaid" | "homehub";
-  synced_from?: "recurring";
-};
-
-type RecurringBill = {
-  id: string;
-  name: string;
-  amount: number | null;
-  category: string | null;
-  due_day: number | null;
-  autopay: boolean;
-  active: boolean;
-  created_at: string;
 };
 
 type MonthSummary = {
@@ -82,7 +70,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
   const [
     { data: transactions, error },
     { data: yearTransactions, error: yearTransactionsError },
-    { data: recurringBills, error: billsError },
     { data: plaidAccounts, error: plaidAccountsError }
   ] = await Promise.all([
     supabase
@@ -103,13 +90,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
       .order("transaction_date", { ascending: false })
       .returns<Transaction[]>(),
     supabase
-      .from("recurring_bills")
-      .select("id, name, amount, category, due_day, autopay, active, created_at")
-      .eq("household_id", household.id)
-      .order("active", { ascending: false })
-      .order("due_day", { ascending: true, nullsFirst: false })
-      .returns<RecurringBill[]>(),
-    supabase
       .from("plaid_accounts")
       .select("id, name, mask, subtype, plaid_items(institution_name)")
       .returns<PlaidAccount[]>()
@@ -123,21 +103,13 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
     throw new Error(yearTransactionsError.message);
   }
 
-  if (billsError) {
-    throw new Error(billsError.message);
-  }
-
   if (plaidAccountsError) {
     throw new Error(plaidAccountsError.message);
   }
 
   const year = Number(selectedMonth.slice(0, 4));
-  const bills = (recurringBills ?? []).sort(compareBillsByNextDueDate);
-  const activeBills = bills.filter((bill) => bill.active);
-  const recurringMonthRows = getRecurringTransactions(activeBills, selectedMonth);
-  const recurringYearRows = getRecurringYearTransactions(activeBills, year);
-  const rows = [...recurringMonthRows, ...(transactions ?? [])].sort(compareTransactionsByDate);
-  const yearRows = [...recurringYearRows, ...(yearTransactions ?? [])];
+  const rows = [...(transactions ?? [])].sort(compareTransactionsByDate);
+  const yearRows = yearTransactions ?? [];
   const income = rows.filter((row) => row.type === "income").reduce((sum, row) => sum + Number(row.amount), 0);
   const expenses = rows.filter((row) => row.type === "expense").reduce((sum, row) => sum + Number(row.amount), 0);
   const net = income - expenses;
@@ -156,7 +128,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           <p className="text-sm font-medium text-sage">{household.name}</p>
           <h1 className="mt-1 text-2xl font-semibold text-ink">Money</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink/65">
-            Track household income and spending by month. Plaid imports and recurring expenses are included automatically.
+            Track household income and spending by month. Plaid imports are included automatically.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -213,12 +185,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
         <StatCard label="Expenses" value={formatCurrency(expenses)} detail={`${rows.filter((row) => row.type === "expense").length} entries`} />
         <StatCard label="Net" value={formatCurrency(net)} detail={formatMonthLabel(start)} />
       </div>
-
-      {recurringMonthRows.length > 0 ? (
-        <div className="mb-5 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-ink/75">
-          <span className="font-semibold text-primary">{recurringMonthRows.length} recurring expenses</span> are synced into this month automatically.
-        </div>
-      ) : null}
 
       <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
         <form action={addTransaction} className="grid gap-3 lg:grid-cols-[0.6fr_0.7fr_0.9fr_1fr_0.8fr_1fr_auto]">
@@ -332,86 +298,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           </div>
         </section>
 
-        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
-          <div className="mb-4 flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-blue" />
-              <h2 className="text-lg font-semibold text-ink">Recurring expenses</h2>
-          </div>
-          <form action={addRecurringBill} className="grid gap-3 lg:grid-cols-[1fr_0.7fr_0.8fr_0.55fr_auto_auto]">
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-ink/50">Expense</span>
-              <input
-                required
-                name="name"
-                placeholder="Electric bill"
-                className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-ink/50">Amount</span>
-              <input
-                min="0.01"
-                step="0.01"
-                name="amount"
-                type="number"
-                placeholder="125.00"
-                className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-ink/50">Category</span>
-              <select
-                name="category"
-                defaultValue=""
-                className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-sage"
-              >
-                <option value="">Optional</option>
-                {categories
-                  .filter((category) => category !== "Income")
-                  .map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium uppercase text-ink/50">Due day</span>
-              <input
-                required
-                min="1"
-                max="31"
-                name="due_day"
-                type="number"
-                placeholder="15"
-                className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-sage"
-              />
-            </label>
-            <label className="mt-6 inline-flex h-10 items-center gap-2 text-sm text-ink/70">
-              <input name="autopay" type="checkbox" className="h-4 w-4 rounded border-line text-sage" />
-              Autopay
-            </label>
-            <button className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90">
-              <Plus className="h-4 w-4" />
-              Add
-            </button>
-          </form>
-
-          <div className="mt-4">
-            {bills.length === 0 ? (
-              <p className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink/60">
-                Add recurring expenses to automatically include them in every month.
-              </p>
-            ) : (
-              <div className="grid gap-2 md:grid-cols-2">
-                {bills.map((bill) => (
-                  <RecurringBillRow key={bill.id} bill={bill} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
         <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Expense categories</h2>
@@ -466,7 +352,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
 
 function TransactionRow({ transaction, month }: { transaction: Transaction; month: string }) {
   const isIncome = transaction.type === "income";
-  const generated = Boolean(transaction.synced_from);
 
   return (
     <div className="rounded-md border border-line px-3 py-2">
@@ -485,11 +370,7 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
             {isIncome ? "+" : "-"}
             {formatCurrency(Number(transaction.amount))}
           </span>
-          {transaction.synced_from ? (
-            <span className="hidden rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary sm:inline-flex">
-              Recurring
-            </span>
-          ) : transaction.source === "plaid" ? (
+          {transaction.source === "plaid" ? (
             <span className="hidden rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue sm:inline-flex">Plaid</span>
           ) : (
             <form action={deleteTransaction}>
@@ -505,107 +386,31 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
           )}
         </div>
       </div>
-      {!generated ? (
-        <form action={updateTransactionCategory} className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <input type="hidden" name="id" value={transaction.id} />
-          <input type="hidden" name="month" value={month} />
-          <select
-            name="category"
-            defaultValue={transaction.category}
-            className="h-9 min-w-0 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          <button className="h-9 rounded-md border border-line px-3 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink">
-            Save category
-          </button>
-        </form>
-      ) : (
+      <form action={updateTransactionCategory} className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <input type="hidden" name="id" value={transaction.id} />
+        <input type="hidden" name="month" value={month} />
+        <select
+          name="category"
+          defaultValue={transaction.category}
+          className="h-9 min-w-0 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
+        >
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+        <button className="h-9 rounded-md border border-line px-3 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink">
+          Save category
+        </button>
+      </form>
+      {transaction.source === "plaid" ? (
         <div className="mt-3 flex sm:hidden">
-          {transaction.synced_from ? (
-            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">Recurring</span>
-          ) : transaction.source === "plaid" ? (
-            <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
-          ) : null}
+          <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
         </div>
-      )}
+      ) : null}
     </div>
   );
-}
-
-function RecurringBillRow({ bill }: { bill: RecurringBill }) {
-  const nextDueDate = bill.due_day ? getNextBillDueDate(bill.due_day) : null;
-
-  return (
-    <div className={bill.active ? "rounded-md border border-line px-3 py-2" : "rounded-md border border-line bg-paper px-3 py-2 opacity-70"}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-ink">{bill.name}</p>
-          <p className="mt-1 truncate text-xs text-ink/50">
-            {[
-              bill.category,
-              bill.amount ? formatCurrency(Number(bill.amount)) : null,
-              nextDueDate ? `Due ${formatDate(toIsoDate(nextDueDate))}` : null,
-              bill.autopay ? "Autopay" : "Manual"
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <form action={toggleRecurringBill}>
-            <input type="hidden" name="id" value={bill.id} />
-            <input type="hidden" name="active" value={bill.active ? "false" : "true"} />
-            <button className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ink/60 hover:bg-paper">
-              {bill.active ? "Pause" : "Resume"}
-            </button>
-          </form>
-          <form action={deleteRecurringBill}>
-            <input type="hidden" name="id" value={bill.id} />
-            <button className="rounded-md p-2 text-ink/45 hover:bg-paper hover:text-coral" aria-label={`Delete ${bill.name}`}>
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function getRecurringYearTransactions(bills: RecurringBill[], year: number): Transaction[] {
-  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
-    getRecurringTransactions(bills, month)
-  );
-}
-
-function getRecurringTransactions(bills: RecurringBill[], month: string): Transaction[] {
-  return bills
-    .map((bill) => recurringTransaction(bill, month))
-    .filter((entry): entry is Transaction => Boolean(entry));
-}
-
-function recurringTransaction(bill: RecurringBill, month: string): Transaction | null {
-  const amount = Number(bill.amount ?? 0);
-
-  if (!bill.active || !Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return {
-    id: `recurring:${bill.id}:${month}`,
-    type: "expense",
-    amount,
-    category: bill.category || "Miscellaneous",
-    merchant: bill.name,
-    note: bill.autopay ? "Recurring expense · Autopay" : "Recurring expense",
-    transaction_date: getRecurringTransactionDate(month, bill.due_day),
-    created_at: `${month}-01T00:00:00.000Z`,
-    synced_from: "recurring" as const
-  };
 }
 
 function compareTransactionsByDate(a: Transaction, b: Transaction) {
@@ -704,42 +509,6 @@ function formatMonthLabel(value: string) {
 function formatShortMonthLabel(value: string) {
   const date = new Date(`${value}-01T00:00:00`);
   return new Intl.DateTimeFormat("en", { month: "short" }).format(date);
-}
-
-function getNextBillDueDate(dueDay: number) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), clampBillDay(now.getFullYear(), now.getMonth(), dueDay));
-
-  if (thisMonth >= today) {
-    return thisMonth;
-  }
-
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampBillDay(nextMonth.getFullYear(), nextMonth.getMonth(), dueDay));
-}
-
-function getRecurringTransactionDate(month: string, dueDay: number | null) {
-  const [year, monthValue] = month.split("-").map(Number);
-  const day = dueDay ? clampBillDay(year, monthValue - 1, dueDay) : 1;
-
-  return [year, String(monthValue).padStart(2, "0"), String(day).padStart(2, "0")].join("-");
-}
-
-function compareBillsByNextDueDate(a: RecurringBill, b: RecurringBill) {
-  if (a.active !== b.active) {
-    return a.active ? -1 : 1;
-  }
-
-  const aDate = a.due_day ? getNextBillDueDate(a.due_day).getTime() : Number.MAX_SAFE_INTEGER;
-  const bDate = b.due_day ? getNextBillDueDate(b.due_day).getTime() : Number.MAX_SAFE_INTEGER;
-
-  return aDate - bDate;
-}
-
-function clampBillDay(year: number, monthIndex: number, dueDay: number) {
-  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-  return Math.min(Math.max(dueDay, 1), lastDay);
 }
 
 function toIsoDate(date: Date) {

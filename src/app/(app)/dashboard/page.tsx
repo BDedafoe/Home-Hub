@@ -52,15 +52,6 @@ type DashboardNote = {
   category: string | null;
 };
 
-type DashboardBill = {
-  id: string;
-  name: string;
-  amount: number | null;
-  category: string | null;
-  due_day: number | null;
-  active: boolean;
-};
-
 export default async function DashboardPage() {
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
@@ -76,8 +67,7 @@ export default async function DashboardPage() {
     { data: yearTransactions, error: yearTransactionsError },
     { data: meals, error: mealsError },
     { data: maintenance, error: maintenanceError },
-    { data: notes, error: notesError },
-    { data: bills, error: billsError }
+    { data: notes, error: notesError }
   ] = await Promise.all([
     supabase
       .from("tasks")
@@ -132,13 +122,7 @@ export default async function DashboardPage() {
       .eq("pinned", true)
       .order("created_at", { ascending: false })
       .limit(2)
-      .returns<DashboardNote[]>(),
-    supabase
-      .from("recurring_bills")
-      .select("id, name, amount, category, due_day, active")
-      .eq("household_id", household.id)
-      .eq("active", true)
-      .returns<DashboardBill[]>()
+      .returns<DashboardNote[]>()
   ]);
 
   if (tasksError) {
@@ -169,21 +153,13 @@ export default async function DashboardPage() {
     throw new Error(notesError.message);
   }
 
-  if (billsError) {
-    throw new Error(billsError.message);
-  }
-
   const openTasks = tasks ?? [];
   const groceries = groceryItems ?? [];
   const plannedMeals = meals ?? [];
   const maintenanceItems = maintenance ?? [];
   const pinnedNotes = notes ?? [];
-  const activeBills = (bills ?? []).filter((bill) => bill.due_day).sort(compareBillsByNextDueDate);
-  const recurringMonthTransactions = getRecurringTransactions(activeBills, start.slice(0, 7));
-  const recurringYearTransactions = getRecurringYearTransactions(activeBills, year);
-  const monthlyTransactions = [...recurringMonthTransactions, ...(transactions ?? [])];
-  const annualTransactions = [...recurringYearTransactions, ...(yearTransactions ?? [])];
-  const nextBill = activeBills[0];
+  const monthlyTransactions = transactions ?? [];
+  const annualTransactions = yearTransactions ?? [];
   const monthlyIncome = monthlyTransactions
     .filter((transaction) => transaction.type === "income")
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
@@ -210,11 +186,7 @@ export default async function DashboardPage() {
         <StatCard label="Monthly spending" value={formatCurrency(monthlyExpenses)} detail={`${formatCurrency(monthlyIncome)} income`} />
         <StatCard label="Open tasks" value={String(openTasks.length)} detail={`${dueTodayCount} due today`} />
         <StatCard label="Grocery items" value={String(groceries.length)} detail="Still needed" />
-        <StatCard
-          label="Upcoming expenses"
-          value={String(activeBills.length)}
-          detail={nextBill ? `${nextBill.name} due ${formatDate(toIsoDate(getNextBillDueDate(nextBill.due_day ?? 1)))}` : "No active expenses"}
-        />
+        <StatCard label="Pinned notes" value={String(pinnedNotes.length)} detail="Saved for quick reference" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
@@ -423,33 +395,6 @@ function getMonthSummaries(transactions: DashboardYearTransaction[], year: numbe
   return summaries;
 }
 
-function getRecurringYearTransactions(bills: DashboardBill[], year: number): DashboardYearTransaction[] {
-  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
-    getRecurringTransactions(bills, month)
-  );
-}
-
-function getRecurringTransactions(bills: DashboardBill[], month: string): DashboardYearTransaction[] {
-  return bills
-    .map((bill) => recurringTransaction(bill, month))
-    .filter((entry): entry is DashboardYearTransaction => Boolean(entry));
-}
-
-function recurringTransaction(bill: DashboardBill, month: string): DashboardYearTransaction | null {
-  const amount = Number(bill.amount ?? 0);
-
-  if (!bill.active || !Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return {
-    type: "expense",
-    amount,
-    category: bill.category || "Recurring expenses",
-    transaction_date: getRecurringTransactionDate(month, bill.due_day)
-  };
-}
-
 function getChartHeight(value: number, summaries: MonthSummary[]) {
   const max = Math.max(1, ...summaries.flatMap((summary) => [summary.income, summary.expenses]));
 
@@ -481,44 +426,4 @@ function formatCurrency(value: number) {
 function formatShortMonthLabel(value: string) {
   const date = new Date(`${value}-01T00:00:00`);
   return new Intl.DateTimeFormat("en", { month: "short" }).format(date);
-}
-
-function getNextBillDueDate(dueDay: number) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), clampBillDay(now.getFullYear(), now.getMonth(), dueDay));
-
-  if (thisMonth >= today) {
-    return thisMonth;
-  }
-
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), clampBillDay(nextMonth.getFullYear(), nextMonth.getMonth(), dueDay));
-}
-
-function getRecurringTransactionDate(month: string, dueDay: number | null) {
-  const [year, monthValue] = month.split("-").map(Number);
-  const day = dueDay ? clampBillDay(year, monthValue - 1, dueDay) : 1;
-
-  return [year, String(monthValue).padStart(2, "0"), String(day).padStart(2, "0")].join("-");
-}
-
-function compareBillsByNextDueDate(a: DashboardBill, b: DashboardBill) {
-  const aDate = a.due_day ? getNextBillDueDate(a.due_day).getTime() : Number.MAX_SAFE_INTEGER;
-  const bDate = b.due_day ? getNextBillDueDate(b.due_day).getTime() : Number.MAX_SAFE_INTEGER;
-
-  return aDate - bDate;
-}
-
-function clampBillDay(year: number, monthIndex: number, dueDay: number) {
-  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-  return Math.min(Math.max(dueDay, 1), lastDay);
-}
-
-function toIsoDate(date: Date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0")
-  ].join("-");
 }
