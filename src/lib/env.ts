@@ -29,8 +29,8 @@ export function getPlaidEnv() {
     throw new Error("Missing Plaid environment variables.");
   }
 
-  if (!["sandbox", "development", "production"].includes(env)) {
-    throw new Error("Invalid Plaid environment.");
+  if (!["sandbox", "production"].includes(env)) {
+    throw new Error("Invalid Plaid environment. Use sandbox or production.");
   }
 
   return { clientId, secret, env };

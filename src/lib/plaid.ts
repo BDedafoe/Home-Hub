@@ -38,7 +38,6 @@ export type PlaidSyncResponse = {
 
 const plaidHosts = {
   sandbox: "https://sandbox.plaid.com",
-  development: "https://development.plaid.com",
   production: "https://production.plaid.com"
 };
 
