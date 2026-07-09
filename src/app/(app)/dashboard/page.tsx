@@ -61,26 +61,6 @@ type DashboardBill = {
   active: boolean;
 };
 
-type Property = {
-  id: string;
-  address: string;
-};
-
-type PropertyFinancials = {
-  property_id: string;
-  mortgage: number;
-  insurance: number;
-  taxes: number;
-  hoa: number;
-  utilities: number;
-  maintenance: number;
-  cleaning: number;
-  other_expenses: number;
-  rent: number;
-  late_fees: number;
-  other_income: number;
-};
-
 export default async function DashboardPage() {
   const { supabase, user } = await getCurrentUser();
   const household = await getOrCreateHousehold(user);
@@ -97,8 +77,7 @@ export default async function DashboardPage() {
     { data: meals, error: mealsError },
     { data: maintenance, error: maintenanceError },
     { data: notes, error: notesError },
-    { data: bills, error: billsError },
-    { data: properties, error: propertiesError }
+    { data: bills, error: billsError }
   ] = await Promise.all([
     supabase
       .from("tasks")
@@ -159,8 +138,7 @@ export default async function DashboardPage() {
       .select("id, name, amount, category, due_day, active")
       .eq("household_id", household.id)
       .eq("active", true)
-      .returns<DashboardBill[]>(),
-    supabase.from("properties").select("id, address").eq("household_id", household.id).returns<Property[]>()
+      .returns<DashboardBill[]>()
   ]);
 
   if (tasksError) {
@@ -195,27 +173,6 @@ export default async function DashboardPage() {
     throw new Error(billsError.message);
   }
 
-  if (propertiesError) {
-    throw new Error(propertiesError.message);
-  }
-
-  const propertyRows = properties ?? [];
-  const propertyIds = propertyRows.map((property) => property.id);
-  const { data: propertyFinancials, error: propertyFinancialsError } =
-    propertyIds.length > 0
-      ? await supabase
-          .from("property_financials")
-          .select("property_id, mortgage, insurance, taxes, hoa, utilities, maintenance, cleaning, other_expenses, rent, late_fees, other_income")
-          .in("property_id", propertyIds)
-          .returns<PropertyFinancials[]>()
-      : { data: [] as PropertyFinancials[], error: null };
-
-  if (propertyFinancialsError) {
-    throw new Error(propertyFinancialsError.message);
-  }
-
-  const propertyMonthTransactions = getPropertyTransactions(propertyRows, propertyFinancials ?? [], start.slice(0, 7));
-  const propertyYearTransactions = getPropertyYearTransactions(propertyRows, propertyFinancials ?? [], year);
   const openTasks = tasks ?? [];
   const groceries = groceryItems ?? [];
   const plannedMeals = meals ?? [];
@@ -224,8 +181,8 @@ export default async function DashboardPage() {
   const activeBills = (bills ?? []).filter((bill) => bill.due_day).sort(compareBillsByNextDueDate);
   const recurringMonthTransactions = getRecurringTransactions(activeBills, start.slice(0, 7));
   const recurringYearTransactions = getRecurringYearTransactions(activeBills, year);
-  const monthlyTransactions = [...propertyMonthTransactions, ...recurringMonthTransactions, ...(transactions ?? [])];
-  const annualTransactions = [...propertyYearTransactions, ...recurringYearTransactions, ...(yearTransactions ?? [])];
+  const monthlyTransactions = [...recurringMonthTransactions, ...(transactions ?? [])];
+  const annualTransactions = [...recurringYearTransactions, ...(yearTransactions ?? [])];
   const nextBill = activeBills[0];
   const monthlyIncome = monthlyTransactions
     .filter((transaction) => transaction.type === "income")
@@ -490,55 +447,6 @@ function recurringTransaction(bill: DashboardBill, month: string): DashboardYear
     amount,
     category: bill.category || "Recurring expenses",
     transaction_date: getRecurringTransactionDate(month, bill.due_day)
-  };
-}
-
-function getPropertyYearTransactions(properties: Property[], financialsRows: PropertyFinancials[], year: number): DashboardYearTransaction[] {
-  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
-    getPropertyTransactions(properties, financialsRows, month)
-  );
-}
-
-function getPropertyTransactions(properties: Property[], financialsRows: PropertyFinancials[], month: string): DashboardYearTransaction[] {
-  const propertyById = new Map(properties.map((property) => [property.id, property]));
-
-  return financialsRows.flatMap((financials) => {
-    const property = propertyById.get(financials.property_id);
-
-    if (!property) {
-      return [];
-    }
-
-    const entries = [
-      propertyTransaction(month, "income", financials.rent, "Rental Income"),
-      propertyTransaction(month, "income", financials.late_fees, "Late Fees"),
-      propertyTransaction(month, "income", financials.other_income, "Property Income"),
-      propertyTransaction(month, "expense", financials.mortgage, "Mortgage/Rent"),
-      propertyTransaction(month, "expense", financials.insurance, "Property Insurance"),
-      propertyTransaction(month, "expense", financials.taxes, "Property Taxes"),
-      propertyTransaction(month, "expense", financials.hoa, "HOA"),
-      propertyTransaction(month, "expense", financials.utilities, "Utilities"),
-      propertyTransaction(month, "expense", financials.maintenance, "Maintenance"),
-      propertyTransaction(month, "expense", financials.cleaning, "Cleaning"),
-      propertyTransaction(month, "expense", financials.other_expenses, "Miscellaneous")
-    ];
-
-    return entries.filter((entry): entry is DashboardYearTransaction => Boolean(entry));
-  });
-}
-
-function propertyTransaction(month: string, type: "income" | "expense", amount: number, category: string): DashboardYearTransaction | null {
-  const numericAmount = Number(amount);
-
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    return null;
-  }
-
-  return {
-    type,
-    amount: numericAmount,
-    category,
-    transaction_date: `${month}-01`
   };
 }
 

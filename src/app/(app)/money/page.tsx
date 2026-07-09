@@ -16,7 +16,7 @@ type Transaction = {
   created_at: string;
   source?: "manual" | "plaid";
   category_source?: "manual" | "plaid" | "homehub";
-  synced_from?: "houses" | "recurring";
+  synced_from?: "recurring";
 };
 
 type RecurringBill = {
@@ -34,26 +34,6 @@ type MonthSummary = {
   month: string;
   income: number;
   expenses: number;
-};
-
-type Property = {
-  id: string;
-  address: string;
-};
-
-type PropertyFinancials = {
-  property_id: string;
-  mortgage: number;
-  insurance: number;
-  taxes: number;
-  hoa: number;
-  utilities: number;
-  maintenance: number;
-  cleaning: number;
-  other_expenses: number;
-  rent: number;
-  late_fees: number;
-  other_income: number;
 };
 
 type PlaidAccount = {
@@ -103,7 +83,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
     { data: transactions, error },
     { data: yearTransactions, error: yearTransactionsError },
     { data: recurringBills, error: billsError },
-    { data: properties, error: propertiesError },
     { data: plaidAccounts, error: plaidAccountsError }
   ] = await Promise.all([
     supabase
@@ -130,7 +109,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
       .order("active", { ascending: false })
       .order("due_day", { ascending: true, nullsFirst: false })
       .returns<RecurringBill[]>(),
-    supabase.from("properties").select("id, address").eq("household_id", household.id).returns<Property[]>(),
     supabase
       .from("plaid_accounts")
       .select("id, name, mask, subtype, plaid_items(institution_name)")
@@ -149,38 +127,17 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
     throw new Error(billsError.message);
   }
 
-  if (propertiesError) {
-    throw new Error(propertiesError.message);
-  }
-
   if (plaidAccountsError) {
     throw new Error(plaidAccountsError.message);
-  }
-
-  const propertyRows = properties ?? [];
-  const propertyIds = propertyRows.map((property) => property.id);
-  const { data: propertyFinancials, error: propertyFinancialsError } =
-    propertyIds.length > 0
-      ? await supabase
-          .from("property_financials")
-          .select("property_id, mortgage, insurance, taxes, hoa, utilities, maintenance, cleaning, other_expenses, rent, late_fees, other_income")
-          .in("property_id", propertyIds)
-          .returns<PropertyFinancials[]>()
-      : { data: [] as PropertyFinancials[], error: null };
-
-  if (propertyFinancialsError) {
-    throw new Error(propertyFinancialsError.message);
   }
 
   const year = Number(selectedMonth.slice(0, 4));
   const bills = (recurringBills ?? []).sort(compareBillsByNextDueDate);
   const activeBills = bills.filter((bill) => bill.active);
-  const propertyMonthRows = getPropertyTransactions(propertyRows, propertyFinancials ?? [], selectedMonth);
-  const propertyYearRows = getPropertyYearTransactions(propertyRows, propertyFinancials ?? [], year);
   const recurringMonthRows = getRecurringTransactions(activeBills, selectedMonth);
   const recurringYearRows = getRecurringYearTransactions(activeBills, year);
-  const rows = [...propertyMonthRows, ...recurringMonthRows, ...(transactions ?? [])].sort(compareTransactionsByDate);
-  const yearRows = [...propertyYearRows, ...recurringYearRows, ...(yearTransactions ?? [])];
+  const rows = [...recurringMonthRows, ...(transactions ?? [])].sort(compareTransactionsByDate);
+  const yearRows = [...recurringYearRows, ...(yearTransactions ?? [])];
   const income = rows.filter((row) => row.type === "income").reduce((sum, row) => sum + Number(row.amount), 0);
   const expenses = rows.filter((row) => row.type === "expense").reduce((sum, row) => sum + Number(row.amount), 0);
   const net = income - expenses;
@@ -199,7 +156,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           <p className="text-sm font-medium text-sage">{household.name}</p>
           <h1 className="mt-1 text-2xl font-semibold text-ink">Money</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink/65">
-            Track household income and spending by month. Houses and recurring expenses are included automatically.
+            Track household income and spending by month. Plaid imports and recurring expenses are included automatically.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -256,12 +213,6 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
         <StatCard label="Expenses" value={formatCurrency(expenses)} detail={`${rows.filter((row) => row.type === "expense").length} entries`} />
         <StatCard label="Net" value={formatCurrency(net)} detail={formatMonthLabel(start)} />
       </div>
-
-      {propertyMonthRows.length > 0 ? (
-        <div className="mb-5 rounded-lg border border-income/25 bg-income/10 px-4 py-3 text-sm text-ink/75">
-          <span className="font-semibold text-income">{propertyMonthRows.length} Houses entries</span> are synced into this month from property income and expenses.
-        </div>
-      ) : null}
 
       {recurringMonthRows.length > 0 ? (
         <div className="mb-5 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-ink/75">
@@ -556,12 +507,10 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
         {transaction.synced_from ? (
           <span
             className={
-              transaction.synced_from === "houses"
-                ? "rounded-full border border-income/30 bg-income/10 px-2 py-1 text-xs font-semibold text-income"
-                : "rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
+              "rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
             }
           >
-            {transaction.synced_from === "houses" ? "Houses" : "Recurring"}
+            Recurring
           </span>
         ) : transaction.source === "plaid" ? (
           <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
@@ -650,68 +599,6 @@ function recurringTransaction(bill: RecurringBill, month: string): Transaction |
     transaction_date: getRecurringTransactionDate(month, bill.due_day),
     created_at: `${month}-01T00:00:00.000Z`,
     synced_from: "recurring" as const
-  };
-}
-
-function getPropertyYearTransactions(properties: Property[], financialsRows: PropertyFinancials[], year: number): Transaction[] {
-  return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`).flatMap((month) =>
-    getPropertyTransactions(properties, financialsRows, month)
-  );
-}
-
-function getPropertyTransactions(properties: Property[], financialsRows: PropertyFinancials[], month: string): Transaction[] {
-  const propertyById = new Map(properties.map((property) => [property.id, property]));
-
-  return financialsRows.flatMap((financials) => {
-    const property = propertyById.get(financials.property_id);
-
-    if (!property) {
-      return [];
-    }
-
-    const entries = [
-      propertyTransaction(financials.property_id, month, "rent", "income", financials.rent, "Rental Income", property.address),
-      propertyTransaction(financials.property_id, month, "late-fees", "income", financials.late_fees, "Late Fees", property.address),
-      propertyTransaction(financials.property_id, month, "other-income", "income", financials.other_income, "Property Income", property.address),
-      propertyTransaction(financials.property_id, month, "mortgage", "expense", financials.mortgage, "Mortgage/Rent", property.address),
-      propertyTransaction(financials.property_id, month, "insurance", "expense", financials.insurance, "Property Insurance", property.address),
-      propertyTransaction(financials.property_id, month, "taxes", "expense", financials.taxes, "Property Taxes", property.address),
-      propertyTransaction(financials.property_id, month, "hoa", "expense", financials.hoa, "HOA", property.address),
-      propertyTransaction(financials.property_id, month, "utilities", "expense", financials.utilities, "Utilities", property.address),
-      propertyTransaction(financials.property_id, month, "maintenance", "expense", financials.maintenance, "Maintenance", property.address),
-      propertyTransaction(financials.property_id, month, "cleaning", "expense", financials.cleaning, "Cleaning", property.address),
-      propertyTransaction(financials.property_id, month, "other-expenses", "expense", financials.other_expenses, "Miscellaneous", property.address)
-    ];
-
-    return entries.filter((entry): entry is Transaction => Boolean(entry));
-  });
-}
-
-function propertyTransaction(
-  propertyId: string,
-  month: string,
-  key: string,
-  type: "income" | "expense",
-  amount: number,
-  category: string,
-  address: string
-): Transaction | null {
-  const numericAmount = Number(amount);
-
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    return null;
-  }
-
-  return {
-    id: `houses:${propertyId}:${month}:${key}`,
-    type,
-    amount: numericAmount,
-    category,
-    merchant: address,
-    note: "Synced from Houses",
-    transaction_date: `${month}-01`,
-    created_at: `${month}-01T00:00:00.000Z`,
-    synced_from: "houses" as const
   };
 }
 
