@@ -122,7 +122,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
   const connectedAccounts = plaidAccounts ?? [];
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-6xl overflow-hidden">
+    <div className="mx-auto w-full min-w-0 max-w-4xl overflow-hidden">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-sm font-medium text-sage">{household.name}</p>

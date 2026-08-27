@@ -97,7 +97,7 @@ export default async function HomePage() {
   const occupiedCount = propertyRows.filter((property) => property.status === "occupied").length;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-4xl">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-sm font-medium text-sage">{household.name}</p>

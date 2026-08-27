@@ -173,7 +173,7 @@ export default async function DashboardPage() {
   const yearExpenses = yearSummaries.reduce((sum, month) => sum + month.expenses, 0);
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-4xl">
       <div className="mb-6">
         <p className="text-sm font-medium text-sage">{household.name}</p>
         <h1 className="mt-1 text-3xl font-semibold text-ink">Household dashboard</h1>
