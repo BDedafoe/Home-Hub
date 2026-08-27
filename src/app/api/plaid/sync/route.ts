@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { syncAllPlaidItems } from "@/lib/plaid-sync";
+import { getCurrentUser, getOrCreateHousehold } from "@/lib/households";
+import { syncAllPlaidItems, syncPlaidItemsForHousehold } from "@/lib/plaid-sync";
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -9,11 +10,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const results = await syncAllPlaidItems();
+  try {
+    const results = await syncAllPlaidItems();
 
-  return NextResponse.json({ ok: true, results });
+    return NextResponse.json({ ok: true, results });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Could not sync Plaid transactions." },
+      { status: 500 }
+    );
+  }
 }
 
-export async function POST(request: Request) {
-  return GET(request);
+export async function POST() {
+  try {
+    const { user } = await getCurrentUser();
+    const household = await getOrCreateHousehold(user);
+    const results = await syncPlaidItemsForHousehold(household.id);
+
+    return NextResponse.json({ ok: true, results });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Could not sync Plaid transactions." },
+      { status: 500 }
+    );
+  }
 }

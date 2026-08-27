@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, RefreshCw } from "lucide-react";
 
 declare global {
   interface Window {
@@ -25,6 +25,7 @@ type PlaidSuccessMetadata = {
 
 export function PlaidLinkButton() {
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function connect() {
@@ -84,17 +85,49 @@ export function PlaidLinkButton() {
     }
   }
 
+  async function syncNow() {
+    setSyncing(true);
+    setMessage(null);
+
+    try {
+      const syncResponse = await fetch("/api/plaid/sync", { method: "POST" });
+      const syncPayload = await readJsonResponse<{ results?: PlaidSyncResult[]; error?: string }>(syncResponse);
+
+      if (!syncResponse.ok) {
+        throw new Error(syncPayload?.error ?? "Could not sync transactions.");
+      }
+
+      const totals = getSyncTotals(syncPayload?.results ?? []);
+      setMessage(`Synced ${totals.changed} transaction${totals.changed === 1 ? "" : "s"}. Refreshing Money...`);
+      window.location.reload();
+    } catch (error) {
+      setSyncing(false);
+      setMessage(error instanceof Error ? error.message : "Could not sync transactions.");
+    }
+  }
+
   return (
     <div className="flex flex-col items-start gap-2">
-      <button
-        type="button"
-        onClick={connect}
-        disabled={loading}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <CreditCard className="h-4 w-4" />
-        {loading ? "Connecting..." : "Connect Credit Card"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={connect}
+          disabled={loading || syncing}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-paper hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <CreditCard className="h-4 w-4" />
+          {loading ? "Connecting..." : "Connect Credit Card"}
+        </button>
+        <button
+          type="button"
+          onClick={syncNow}
+          disabled={loading || syncing}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Syncing..." : "Sync transactions now"}
+        </button>
+      </div>
       {message ? <p className="text-xs text-ink/55">{message}</p> : null}
     </div>
   );
@@ -135,4 +168,31 @@ async function readJsonResponse<T>(response: Response) {
   } catch {
     return { error: text.slice(0, 180) } as T;
   }
+}
+
+type PlaidSyncResult =
+  | {
+      ok: true;
+      added: number;
+      modified: number;
+      removed: number;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+function getSyncTotals(results: PlaidSyncResult[]) {
+  return results.reduce(
+    (totals, result) => {
+      if (result.ok) {
+        totals.changed += result.added + result.modified + result.removed;
+      } else {
+        totals.failed += 1;
+      }
+
+      return totals;
+    },
+    { changed: 0, failed: 0 }
+  );
 }

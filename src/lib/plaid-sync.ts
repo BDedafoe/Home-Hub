@@ -23,6 +23,20 @@ type ExistingTransaction = {
   category_source: string;
 };
 
+type PlaidSyncItemResult =
+  | {
+      item_id: string;
+      ok: true;
+      added: number;
+      modified: number;
+      removed: number;
+    }
+  | {
+      item_id: string;
+      ok: false;
+      error: string;
+    };
+
 export async function syncPlaidItem(item: PlaidItem) {
   const supabase = createAdminClient();
   let cursor = item.transactions_cursor;
@@ -78,20 +92,60 @@ export async function syncAllPlaidItems() {
   const { data: items, error } = await supabase
     .from("plaid_items")
     .select("id, household_id, user_id, access_token, transactions_cursor")
-    .eq("status", "active")
+    .neq("status", "disconnected")
     .returns<PlaidItem[]>();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const results = [];
+  return syncPlaidItems(items ?? []);
+}
 
-  for (const item of items ?? []) {
-    results.push({ item_id: item.id, ...(await syncPlaidItem(item)) });
+export async function syncPlaidItemsForHousehold(householdId: string) {
+  const supabase = createAdminClient();
+  const { data: items, error } = await supabase
+    .from("plaid_items")
+    .select("id, household_id, user_id, access_token, transactions_cursor")
+    .eq("household_id", householdId)
+    .neq("status", "disconnected")
+    .returns<PlaidItem[]>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return syncPlaidItems(items ?? []);
+}
+
+async function syncPlaidItems(items: PlaidItem[]) {
+  const results: PlaidSyncItemResult[] = [];
+
+  for (const item of items) {
+    try {
+      results.push({ item_id: item.id, ok: true, ...(await syncPlaidItem(item)) });
+    } catch (error) {
+      await markPlaidItemError(item.id);
+      results.push({
+        item_id: item.id,
+        ok: false,
+        error: error instanceof Error ? error.message : "Could not sync this Plaid account."
+      });
+    }
   }
 
   return results;
+}
+
+async function markPlaidItemError(itemId: string) {
+  const supabase = createAdminClient();
+  await supabase
+    .from("plaid_items")
+    .update({
+      status: "error",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", itemId);
 }
 
 async function upsertAccounts(itemId: string, accounts: PlaidAccount[]) {
