@@ -260,7 +260,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
         </form>
       </section>
 
-      <div className="mt-5 grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <div className="mt-5 grid w-full min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <section className="min-w-0 rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
           <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
