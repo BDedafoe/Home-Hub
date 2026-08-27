@@ -45,7 +45,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const googleConfigured = hasGoogleCalendarEnv();
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-7xl">
       <div className="mb-6">
         <p className="text-sm font-medium text-sage">{household.name}</p>
         <h1 className="mt-1 text-2xl font-semibold text-ink">Settings</h1>

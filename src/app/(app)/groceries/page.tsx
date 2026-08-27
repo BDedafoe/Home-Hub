@@ -34,7 +34,7 @@ export default async function GroceriesPage() {
   const completedItems = items?.filter((item) => item.checked) ?? [];
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-7xl">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-sm font-medium text-sage">{household.name}</p>

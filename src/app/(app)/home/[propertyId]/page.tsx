@@ -173,7 +173,7 @@ export default async function PropertyPage({ params, searchParams }: PropertyPag
   const completedMaintenance = (maintenanceItems ?? []).filter((item) => item.status === "done");
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-7xl">
       <div className="mb-5">
         <Link href="/home" className="inline-flex items-center gap-2 text-sm font-medium text-ink/60 hover:text-primary">
           <ArrowLeft className="h-4 w-4" />
