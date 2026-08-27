@@ -260,8 +260,8 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
         </form>
       </section>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
+      <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <section className="min-w-0 rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
           <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-lg font-semibold text-ink">{selectedMonth.slice(0, 4)} monthly history</h2>
@@ -298,7 +298,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           </div>
         </section>
 
-        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
+        <section className="min-w-0 rounded-lg border border-line bg-panel p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Expense categories</h2>
             <span className="text-sm text-ink/55">{categoryTotals.length}</span>
@@ -327,7 +327,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
           )}
         </section>
 
-        <section className="rounded-lg border border-line bg-panel p-4 shadow-sm">
+        <section className="min-w-0 overflow-hidden rounded-lg border border-line bg-panel p-4 shadow-sm lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">{formatMonthLabel(start)} transactions</h2>
             <span className="text-sm text-ink/55">{rows.length}</span>
@@ -338,7 +338,7 @@ export default async function MoneyPage({ searchParams }: MoneyPageProps) {
               <p className="mt-1 text-sm text-ink/55">Add your first income or expense above.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               {rows.map((transaction) => (
                 <TransactionRow key={transaction.id} transaction={transaction} month={selectedMonth} />
               ))}
@@ -354,24 +354,24 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
   const isIncome = transaction.type === "income";
 
   return (
-    <div className="rounded-md border border-line px-3 py-2">
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+    <div className="max-w-full overflow-hidden rounded-md border border-line px-3 py-2">
+      <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+        <div className="flex min-w-0 items-start gap-3 overflow-hidden">
           {isIncome ? <ArrowUpCircle className="mt-0.5 h-5 w-5 shrink-0 text-income" /> : <ArrowDownCircle className="mt-0.5 h-5 w-5 shrink-0 text-coral" />}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-ink">{transaction.merchant || transaction.category}</p>
-            <p className="mt-1 line-clamp-2 text-xs text-ink/50 sm:truncate">
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-sm font-medium text-ink">{transaction.merchant || transaction.category}</p>
+            <p className="mt-1 break-words text-xs text-ink/50">
               {[transaction.category, formatDate(transaction.transaction_date), transaction.note].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 items-center justify-between gap-2 md:justify-end">
           <span className={isIncome ? "whitespace-nowrap text-sm font-semibold text-income" : "whitespace-nowrap text-sm font-semibold text-ink"}>
             {isIncome ? "+" : "-"}
             {formatCurrency(Number(transaction.amount))}
           </span>
           {transaction.source === "plaid" ? (
-            <span className="hidden rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue sm:inline-flex">Plaid</span>
+            <span className="hidden rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue md:inline-flex">Plaid</span>
           ) : (
             <form action={deleteTransaction}>
               <input type="hidden" name="id" value={transaction.id} />
@@ -386,13 +386,13 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
           )}
         </div>
       </div>
-      <form action={updateTransactionCategory} className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+      <form action={updateTransactionCategory} className="mt-3 grid min-w-0 gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
         <input type="hidden" name="id" value={transaction.id} />
         <input type="hidden" name="month" value={month} />
         <select
           name="category"
           defaultValue={transaction.category}
-          className="h-9 min-w-0 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
+          className="h-9 w-full min-w-0 rounded-md border border-line bg-panel px-2 text-xs outline-none focus:border-sage"
         >
           {categories.map((category) => (
             <option key={category} value={category}>
@@ -400,12 +400,12 @@ function TransactionRow({ transaction, month }: { transaction: Transaction; mont
             </option>
           ))}
         </select>
-        <button className="h-9 rounded-md border border-line px-3 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink">
+        <button className="h-9 w-full rounded-md border border-line px-3 text-xs font-medium text-ink/65 hover:bg-paper hover:text-ink md:w-auto">
           Save category
         </button>
       </form>
       {transaction.source === "plaid" ? (
-        <div className="mt-3 flex sm:hidden">
+        <div className="mt-3 flex md:hidden">
           <span className="rounded-full border border-blue/30 bg-blue/10 px-2 py-1 text-xs font-semibold text-blue">Plaid</span>
         </div>
       ) : null}
