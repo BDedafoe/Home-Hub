@@ -166,7 +166,7 @@ export default async function DashboardPage() {
   const monthlyExpenses = monthlyTransactions
     .filter((transaction) => transaction.type === "expense")
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
-  const topCategories = getTopExpenseCategories(monthlyTransactions).slice(0, 3);
+  const expenseCategories = getTopExpenseCategories(monthlyTransactions);
   const dueTodayCount = openTasks.filter((task) => task.due_date === today).length;
   const yearSummaries = getMonthSummaries(annualTransactions, year);
   const yearIncome = yearSummaries.reduce((sum, month) => sum + month.income, 0);
@@ -255,14 +255,14 @@ export default async function DashboardPage() {
             <CircleDollarSign className="h-5 w-5 text-blue" />
             <h2 className="text-lg font-semibold text-ink">Money snapshot</h2>
           </div>
-          {topCategories.length === 0 ? (
+          {expenseCategories.length === 0 ? (
             <p className="rounded-md border border-dashed border-line p-4 text-sm text-ink/60">No transactions this month.</p>
           ) : (
             <div className="space-y-3 text-sm">
-              {topCategories.map((category) => (
-                <div key={category.name} className="flex justify-between">
-                  <span className="text-ink/60">{category.name}</span>
-                  <span className="font-medium text-ink">{formatCurrency(category.total)}</span>
+              {expenseCategories.map((category) => (
+                <div key={category.name} className="flex min-w-0 justify-between gap-3">
+                  <span className="min-w-0 truncate text-ink/60">{category.name}</span>
+                  <span className="shrink-0 font-medium text-ink">{formatCurrency(category.total)}</span>
                 </div>
               ))}
             </div>
