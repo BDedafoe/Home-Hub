@@ -8,19 +8,21 @@ import { CalendarDays, Home, ListChecks, LogOut, MoreHorizontal, NotebookText, R
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: CalendarDays },
   { href: "/money", label: "Money", icon: ReceiptText },
-  { href: "/tasks", label: "Tasks", icon: ListChecks },
-  { href: "/meals", label: "Meals", icon: Utensils },
   { href: "/groceries", label: "Groceries", icon: ShoppingCart },
+  { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/home", label: "Houses", icon: Home },
+  { href: "/meals", label: "Meals", icon: Utensils },
   { href: "/notes", label: "Notes", icon: NotebookText },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
 
 const mobileItems = [
   { href: "/dashboard", label: "Home", icon: CalendarDays },
-  { href: "/tasks", label: "Tasks", icon: ListChecks },
+  { href: "/money", label: "Money", icon: ReceiptText },
   { href: "/groceries", label: "Groceries", icon: ShoppingCart },
-  { href: "/money", label: "Money", icon: ReceiptText }
+  { href: "/tasks", label: "Tasks", icon: ListChecks }
+  
+  
 ];
 
 const overflowItems = [
