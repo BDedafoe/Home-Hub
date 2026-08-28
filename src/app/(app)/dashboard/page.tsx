@@ -233,17 +233,16 @@ export default async function DashboardPage() {
 
         <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-sage" />
-            <h2 className="text-lg font-semibold text-ink">Today</h2>
+            <ShoppingCart className="h-5 w-5 text-gold" />
+            <h2 className="text-lg font-semibold text-ink">Groceries</h2>
           </div>
-          {openTasks.length === 0 ? (
-            <p className="rounded-md border border-dashed border-line p-4 text-sm text-ink/60">No open tasks yet.</p>
+          {groceries.length === 0 ? (
+            <p className="rounded-md border border-dashed border-line p-4 text-sm text-ink/60">No grocery items needed.</p>
           ) : (
-            <div className="space-y-3">
-              {openTasks.map((task) => (
-                <div key={task.id} className="rounded-md border border-line px-3 py-2">
-                  <p className="text-sm font-medium text-ink">{task.title}</p>
-                  <p className="mt-1 text-xs text-ink/50">{task.due_date ? `Due ${formatDate(task.due_date)}` : "No due date"}</p>
+            <div className="space-y-2">
+              {groceries.map((item) => (
+                <div key={item.id} className="rounded-md bg-paper px-3 py-2 text-sm text-ink">
+                  {item.quantity ? `${item.name} · ${item.quantity}` : item.name}
                 </div>
               ))}
             </div>
@@ -287,25 +286,26 @@ export default async function DashboardPage() {
             </div>
           )}
         </section>
-
+            
         <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-gold" />
-            <h2 className="text-lg font-semibold text-ink">Groceries</h2>
+            <CheckCircle2 className="h-5 w-5 text-sage" />
+            <h2 className="text-lg font-semibold text-ink">Today</h2>
           </div>
-          {groceries.length === 0 ? (
-            <p className="rounded-md border border-dashed border-line p-4 text-sm text-ink/60">No grocery items needed.</p>
+          {openTasks.length === 0 ? (
+            <p className="rounded-md border border-dashed border-line p-4 text-sm text-ink/60">No open tasks yet.</p>
           ) : (
-            <div className="space-y-2">
-              {groceries.map((item) => (
-                <div key={item.id} className="rounded-md bg-paper px-3 py-2 text-sm text-ink">
-                  {item.quantity ? `${item.name} · ${item.quantity}` : item.name}
+            <div className="space-y-3">
+              {openTasks.map((task) => (
+                <div key={task.id} className="rounded-md border border-line px-3 py-2">
+                  <p className="text-sm font-medium text-ink">{task.title}</p>
+                  <p className="mt-1 text-xs text-ink/50">{task.due_date ? `Due ${formatDate(task.due_date)}` : "No due date"}</p>
                 </div>
               ))}
             </div>
           )}
-        </section>
-
+        </section>    
+        
         <section className="rounded-lg border border-line bg-panel p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <Wrench className="h-5 w-5 text-blue" />
